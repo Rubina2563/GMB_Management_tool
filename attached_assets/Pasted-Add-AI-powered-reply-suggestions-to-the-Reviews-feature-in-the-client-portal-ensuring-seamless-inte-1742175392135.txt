@@ -1,0 +1,52 @@
+Add AI-powered reply suggestions to the Reviews feature in the client portal, ensuring seamless integration with the existing infrastructure and design:
+
+- Backend:
+  - Ensure the "/api/client/reviews/ai-suggest" endpoint is fully implemented (as previously defined):
+    - Generate replies using the selected LLM (OpenAI, Claude, DeepSeek, Grok) based on the user’s "AI Settings" (client’s API key if provided, otherwise use our API).
+    - Prompt: "Generate a warm, empathetic, human-like reply to this review, incorporating the business’s primary keyword [keyword], service category [category], and location [location]. Analyze the review text for sentiment: for positive reviews, express gratitude and encourage future visits (e.g., 'We’re thrilled you loved our [service] at [location]! Come back soon!'); for negative reviews, apologize sincerely and offer a resolution (e.g., 'We’re so sorry about your experience with our [service] at [location]. Please contact us to resolve this!'). Avoid robotic phrasing; use casual, friendly tones."
+    - Cost: 2 credits per reply if using our API, free if using client’s API key (deduct from mock credit balance).
+    - Return the generated reply as a string.
+  - Verify the credit system deducts credits correctly and logs usage in SQLite (e.g., `credit_transactions` table with timestamp, user_id, action, credits_used).
+  - Ensure the endpoint handles errors (e.g., invalid API key, LLM failure) by returning a fallback message: "Unable to generate reply. Please try again or use manual input."
+
+- Frontend:
+  - Enhance the "Reply" modal in /client/reviews (under "All Reviews" sub-menu):
+    - Existing Setup: The "Reply" button (#F28C38 with #FFFFFF text, hover #F5A461) opens a modal with an editable text area for manual reply, a "Regenerate" button (#6B5B95), and a "Send" button (#F28C38).
+    - Add AI Option:
+      - Add a toggle or two buttons at the top of the modal: "Manual Reply" (default, #D3D7D9 with #1C2526 text) and "Reply Using AI" (#F28C38 with #FFFFFF text, hover #F5A461).
+      - When "Manual Reply" is selected:
+        - Show the existing text area (empty, editable) for the user to type their reply.
+        - "Regenerate" button is hidden.
+      - When "Reply Using AI" is selected:
+        - Automatically trigger the "/api/client/reviews/ai-suggest" endpoint to generate a reply based on the review content, primary keyword (from Campaigns), service category (from GBP data), and location (from GBP data).
+        - Display the generated reply in the text area (editable).
+        - Show the "Regenerate" button (#6B5B95 with #FFFFFF text, hover #4A3C7A) to allow users to request a new AI-generated reply (triggers the endpoint again, deducts additional credits if applicable).
+        - Show credit usage: Below the text area, display "Cost: 2 credits (or free with your API key)" in #1C2526 text.
+      - "Send" Button: Remains #F28C38 with #FFFFFF text, hover #F5A461. Submits the reply (manual or AI-generated) via the "/api/client/reviews/reply" endpoint.
+    - Modal Design:
+      - Background: #FFFFFF.
+      - Text: #1C2526 (primary), #D3D7D9 (secondary, e.g., cost info).
+      - Use Framer Motion: Fade-in animation for the modal, scale on hover for buttons.
+      - Montserrat font: 24px bold for headings (e.g., "Reply to Review"), 16px for body text.
+  - Notifications:
+    - On successful AI generation: Show a toast (bg-#F28C38, text-#FFFFFF) with "AI reply generated successfully."
+    - On failure: Show a toast (bg-#E63946, text-#FFFFFF) with "Failed to generate AI reply. Try again or use manual input."
+    - On credit deduction: Show a toast (bg-#F28C38, text-#FFFFFF) with "2 credits deducted. Remaining: [balance]."
+
+- Design Consistency:
+  - Ensure all buttons use #F28C38 with #FFFFFF text, hover #F5A461.
+  - Use #6B5B95 for the "Regenerate" button, hover #4A3C7A (for consistency with tech accents).
+  - Use #E63946 for error states (e.g., failed AI generation).
+  - Maintain the existing glassmorphism for review cards (rgba(255, 255, 255, 0.8), blur(10px), border #F28C38).
+
+- Interdependencies:
+  - Fetch the primary keyword, service category, and location from the Campaigns and GBP data associated with the review’s GBP.
+  - Use the LLM selected in "AI Settings" (already implemented in Client Dashboard).
+
+- Testing:
+  - Verify the "Reply Using AI" button triggers the correct endpoint and displays the generated reply.
+  - Test with different LLMs (OpenAI, Claude, DeepSeek, Grok) and API key scenarios (client’s key vs. our API).
+  - Confirm credit deduction (2 credits per generation, none with client’s API key) and balance updates.
+  - Test manual reply option to ensure it works independently of AI.
+  - Validate error handling (e.g., LLM failure, insufficient credits) with appropriate toasts.
+  - Ensure accessibility (WCAG AA contrast ratios, e.g., #F28C38 on #FFFFFF for buttons).

@@ -1,0 +1,114 @@
+Set up and use the DataForSEO Rank Tracker API in the admin panel of the "LOCALAUTHORITY" React + Node.js SaaS application on Replit, ensuring all API calls are managed from the backend. Add a toggle option in the admin panel to switch between DataForSEO Rank Tracker API and Google Places API for geo-grid rankings on the GBP Map Rankings page, while ensuring DataForSEO is used for organic rankings and backlink analysis without conflicts.
+
+### Purpose of DataForSEO Rank Tracker API
+- **Role**: The DataForSEO Rank Tracker API fetches local ranking data for a business across a geo-grid, enabling the calculation of local SEO metrics, as well as organic rankings and backlink analysis.
+- **Use Cases**:
+  - **GBP Map Rankings Page (Optional, Based on Toggle)**: Fetches ranking data for each grid point in the 5x5 geo-grid to calculate:
+    - **Average First Page Rank (AFPR)**: Average rank for top 20 positions.
+    - **Total Grid Rank Mean (TGRM)**: Average rank across all positions.
+    - **Top Spot Share (TSS)**: Percentage of top 3 appearances.
+  - **Organic Rankings (Primary Use)**: Fetches organic search rankings for keywords across broader search results (not limited to geo-grid).
+  - **Backlink Analysis**: Analyzes backlinks to the business’s website for SEO insights.
+- **Toggle Functionality**:
+  - Add a toggle in the admin panel to switch between DataForSEO and Google Places API for geo-grid rankings.
+  - DataForSEO should remain the primary API for organic rankings and backlink analysis, regardless of the toggle.
+- **Field Testing Goal**:
+  - Ensure ranking data for geo-grid rankings can be fetched using either DataForSEO or Google Places API, based on the toggle setting.
+  - Ensure DataForSEO is used for organic rankings and backlink analysis without conflicts.
+  - Verify that switching between APIs does not disrupt the GBP Map Rankings page functionality.
+
+### Backend (Node.js)
+- Create a new admin endpoint `/api/admin/dataforseo/setup`:
+  - **Method**: POST
+  - **Purpose**: Allow admin users to input and save DataForSEO API credentials.
+  - **Request Body**:
+    - `login`: String (DataForSEO login).
+    - `password`: String (DataForSEO password).
+  - **Logic**:
+    - Store the credentials securely in a `.env` file or database (e.g., MongoDB collection `apiCredentials`).
+    - Validate the credentials by making a test API call (e.g., fetch account balance using `https://api.dataforseo.com/v3/serp/ping`).
+    - Return: JSON with `{ success: true, message: "DataForSEO API setup successful" }` or `{ success: false, error: "Invalid credentials" }`.
+- Create a new admin endpoint `/api/admin/geo-grid-api/preference`:
+  - **Method**: POST
+  - **Purpose**: Allow admin users to set the preferred API for geo-grid rankings.
+  - **Request Body**:
+    - `preferredApi`: String ("dataforseo" or "google-places").
+  - **Logic**:
+    - Store the preference in the database (e.g., MongoDB collection `settings`, field `geoGridApiPreference`).
+    - Return: JSON with `{ success: true, message: "Geo-grid API preference updated" }`.
+- Create a new admin endpoint `/api/admin/geo-grid-api/preference`:
+  - **Method**: GET
+  - **Purpose**: Fetch the current geo-grid API preference.
+  - **Logic**:
+    - Retrieve the preference from the database.
+    - Return: JSON with `{ preferredApi: "dataforseo" | "google-places" }`.
+- Update `/api/client/gbp-audit/map-rankings`:
+  - **Logic**:
+    - Fetch the geo-grid API preference from the database (`settings.geoGridApiPreference`).
+    - If `preferredApi` is "dataforseo":
+      - Use the stored DataForSEO credentials to fetch ranking data for the 5x5 geo-grid.
+      - Calculate AFPR, TGRM, and TSS based on the ranking data:
+        - **AFPR**: Average rank for top 20 positions.
+        - **TGRM**: Average rank across all positions.
+        - **TSS**: Percentage of top 3 appearances.
+      - Return: JSON with `{ afpr: 8.5, tgrm: 15.2, tss: 32.5, gridData: [{ lat, lng, rank, inTop3 }, ...], apiUsed: "dataforseo" }`.
+    - If `preferredApi` is "google-places":
+      - Use the Google Places API (with the shared API key from `/api/admin/google-api/setup`) to fetch ranking data for the 5x5 geo-grid.
+      - Note: Google Places API may require additional logic to simulate ranking data (e.g., by querying place rankings for the business’s name and keywords at each grid point, though this may be less accurate than DataForSEO).
+      - Calculate AFPR, TGRM, and TSS based on the ranking data.
+      - Return: JSON with `{ afpr: 8.5, tgrm: 15.2, tss: 32.5, gridData: [{ lat, lng, rank, inTop3 }, ...], apiUsed: "google-places" }`.
+  - **Error Handling**:
+    - If the preferred API’s credentials are missing, return a 401 error: `{ error: "Preferred geo-grid API not configured" }`.
+- Add a new endpoint `/api/client/organic-rankings`:
+  - **Method**: GET
+  - **Purpose**: Fetch organic search rankings using DataForSEO (not affected by the toggle).
+  - **Logic**:
+    - Use the stored DataForSEO credentials to fetch organic rankings for the business’s target keywords.
+    - Return: JSON with organic ranking data.
+- Add a new endpoint `/api/client/backlink-analysis`:
+  - **Method**: GET
+  - **Purpose**: Analyze backlinks using DataForSEO (not affected by the toggle).
+  - **Logic**:
+    - Use the stored DataForSEO credentials to fetch backlink data for the business’s website.
+    - Return: JSON with backlink analysis data.
+
+### Admin Panel (React)
+- Add a new section in the admin panel under `/admin/api-settings`:
+  - **Section Title**: "DataForSEO Rank Tracker API Setup"
+  - **Form Fields**:
+    - Login (text input).
+    - Password (password input).
+  - **Submit Button**: "Save Credentials" (#F28C38 with #FFFFFF text, hover #F5A461).
+  - **Logic**:
+    - On form submission, send a POST request to `/api/admin/dataforseo/setup`.
+    - Display a success message ("API setup successful") or error message ("Failed to set up API") based on the response.
+- Add a new section under `/admin/api-settings`:
+  - **Section Title**: "Geo-Grid Rankings API Preference"
+  - **Form Fields**:
+    - Toggle Switch (labeled "Use DataForSEO" / "Use Google Places", default to "DataForSEO").
+  - **Submit Button**: "Save Preference" (#F28C38 with #FFFFFF text, hover #F5A461).
+  - **Logic**:
+    - On page load, fetch the current preference from `/api/admin/geo-grid-api/preference` and set the toggle accordingly.
+    - On toggle change and form submission, send a POST request to `/api/admin/geo-grid-api/preference` with `preferredApi: "dataforseo"` or `preferredApi: "google-places"`.
+    - Display a success message ("Preference updated successfully") or error message ("Failed to update preference") based on the response.
+  - **Design**:
+    - Background: #FFFFFF.
+    - Text: #1C2526.
+    - Toggle: #F28C38 when active, #CCCCCC when inactive.
+    - Montserrat font: 24px bold headings, 16px body.
+    - Framer Motion: Fade-in for the form, scale on hover for the button.
+
+### Frontend (React - GBP Map Rankings Page)
+- Update `/client/gbp-audit/gbp-map-rankings`:
+  - Fetch the geo-grid ranking data from `/api/client/gbp-audit/map-rankings`.
+  - Display the API used (e.g., "Data Source: DataForSEO" or "Data Source: Google Places") in a small label above the map.
+  - Ensure the map, metrics (AFPR, TGRM, TSS), and grid data render correctly regardless of the API used.
+
+### Testing
+- Verify that admin users can save DataForSEO credentials in the admin panel.
+- Test the toggle functionality:
+  - Set the preference to "DataForSEO" and verify that the GBP Map Rankings page uses DataForSEO for geo-grid rankings.
+  - Set the preference to "Google Places" and verify that the GBP Map Rankings page uses Google Places API for geo-grid rankings.
+- Test organic rankings (`/api/client/organic-rankings`) and backlink analysis (`/api/client/backlink-analysis`) to ensure they always use DataForSEO, regardless of the toggle.
+- Ensure there are no conflicts between DataForSEO and Google Places API when switching.
+- Test error handling if credentials for the preferred API are missing or invalid.

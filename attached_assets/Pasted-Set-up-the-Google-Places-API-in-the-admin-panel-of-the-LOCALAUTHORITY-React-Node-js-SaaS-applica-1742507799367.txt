@@ -1,0 +1,45 @@
+Set up the Google Places API in the admin panel of the "LOCALAUTHORITY" React + Node.js SaaS application on Replit, ensuring all API calls are managed from the backend.
+
+### Purpose of Google Places API
+- **Role**: The Google Places API provides detailed location data, which is used to enhance geo-grid mapping and identify duplicate listings.
+- **Use Cases**:
+  - **GBP Map Rankings Page**: Generate latitude and longitude coordinates for the 5x5 geo-grid centered on the GBP location, ensuring accurate mapping of grid points.
+  - **Duplicate Listings Page**: Cross-reference place IDs with GBP listings to identify potential duplicates.
+  - **Keyword Insights Page**: Identify local search terms tied to specific locations for better keyword optimization.
+- **Field Testing Goal**: Ensure the geo-grid is accurately mapped and duplicate listings are correctly identified, supporting hyperlocal SEO analysis.
+
+### Backend (Node.js)
+- Create a new admin endpoint `/api/admin/google-places/setup`:
+  - **Method**: POST
+  - **Purpose**: Allow admin users to input and save the Google Places API key.
+  - **Request Body**:
+    - `apiKey`: String (Google Places API key).
+  - **Logic**:
+    - Store the API key securely in a `.env` file or database (e.g., MongoDB collection `apiCredentials`).
+    - Validate the API key by making a test API call (e.g., fetch place details for a known place ID using `https://maps.googleapis.com/maps/api/place/details/json`).
+    - Return: JSON with `{ success: true, message: "Google Places API setup successful" }` or `{ success: false, error: "Invalid API key" }`.
+- Update `/api/client/gbp-audit/map-rankings`:
+  - Use the stored API key to generate lat/lng coordinates for the 5x5 geo-grid.
+  - Example: Use the Places API to fetch the GBP location’s coordinates, then calculate grid points within a 1-mile radius.
+- Update `/api/client/gbp-audit/duplicates`:
+  - Use the API key to cross-reference place IDs with GBP listings for duplicate detection.
+
+### Admin Panel (React)
+- Add a new section in the admin panel under `/admin/api-settings`:
+  - **Section Title**: "Google Places API Setup"
+  - **Form Fields**:
+    - API Key (text input).
+  - **Submit Button**: "Save API Key" (#F28C38 with #FFFFFF text, hover #F5A461).
+  - **Logic**:
+    - On form submission, send a POST request to `/api/admin/google-places/setup`.
+    - Display a success message ("API setup successful") or error message ("Failed to set up API") based on the response.
+  - **Design**:
+    - Background: #FFFFFF.
+    - Text: #1C2526.
+    - Montserrat font: 24px bold headings, 16px body.
+    - Framer Motion: Fade-in for the form, scale on hover for the button.
+
+### Testing
+- Verify that admin users can save the Google Places API key in the admin panel.
+- Test API calls to fetch location data for the geo-grid and cross-reference place IDs for duplicate listings.
+- Ensure error handling works if the API key is invalid or missing.

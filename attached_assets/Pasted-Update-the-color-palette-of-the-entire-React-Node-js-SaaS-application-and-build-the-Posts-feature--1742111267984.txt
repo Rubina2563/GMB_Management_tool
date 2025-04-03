@@ -1,0 +1,79 @@
+Update the color palette of the entire React + Node.js SaaS application and build the Posts feature, ensuring a consistent design across all screens:
+
+- Frontend (Color Palette Update):
+  - Apply the following new palette (avoiding Rolex colors #a37e2c, #006039, #c9c08f, #9eca9e, #f4f4f2):
+    - Primary Colors:
+      - Background Color: Pure White (#FFFFFF) – Use as the primary background for all screens (right-hand pane and full layout).
+    - Secondary Colors:
+      - Accent Color: Bright Orange (#FF6200) – Use for primary buttons, call-to-action elements, icons, and hover effects, with white (#FFFFFF) text.
+      - Gradient Accent: Orange to Light Orange (#FF6200 to #FF8C42) – Use for button hover effects and subtle highlights.
+    - Supporting Colors:
+      - Text Color: Jet Black (#1A1A1A) – Primary text color for readability on the white background.
+      - Secondary Text/Background: Light Gray (#E8ECEF) – Use sparingly for secondary text, borders, or inactive states.
+      - Tech Accent: Deep Violet (#4A3C7A) – Use for data visualizations, charts, or tech-related highlights.
+      - Alert/Indicator: Crimson Red (#D32F2F) – Use for critical notifications or indicators.
+  - Apply the new palette across all pages and components:
+    - Left-Hand Sidebar:
+      - Background: Retain gradient from #1C2526 to #0D1214.
+      - Text: #FFFFFF (active/inactive items), with active items in #FF6200 and hover effects to #FF8C42.
+      - Icons: #FF6200 with #FFFFFF text/icon color.
+    - Campaign Setup Wizard (/client/campaigns, Steps 1-6):
+      - Background (Right-Hand Pane): #FFFFFF.
+      - Text: #1A1A1A (primary), #E8ECEF (secondary, e.g., hints).
+      - Buttons: #FF6200 with #FFFFFF text, hover gradient to #FF8C42 (e.g., "Continue", "Back", "Connect to Google").
+      - Dropdowns/Inputs: #FFFFFF background, #1A1A1A text, #FF6200 borders on focus.
+      - Example (Step 3): Geo-Grid Size buttons (#FF6200 with #FFFFFF text), selected option highlighted with #FF8C42 gradient.
+    - Posts Feature (/client/posts, see below for details).
+    - All Other Pages (Dashboards, Reviews, etc.):
+      - Background (Right-Hand Pane): #FFFFFF.
+      - Text: #1A1A1A (primary), #E8ECEF (secondary).
+      - Buttons: #FF6200 with #FFFFFF text, hover #FF8C42.
+      - Charts: #4A3C7A, Alerts: #D32F2F.
+  - Accessibility:
+    - Ensure WCAG AA contrast ratios (e.g., #1A1A1A on #FFFFFF).
+    - Test with WebAIM Contrast Checker.
+  - Design Enhancements:
+    - Use Framer Motion for hover effects (e.g., scale buttons).
+    - Maintain Montserrat font (24px bold headings, 16px body).
+    - Use Heroicons with #FF6200 for icons, #1A1A1A text in the right-hand pane, #FFFFFF in the sidebar.
+
+- Backend (Color Palette Update):
+  - Update API responses with color-related data (e.g., campaign rankings, post statuses) to use #FF6200, #4A3C7A, #D32F2F.
+
+- Frontend (Posts Feature Implementation):
+  - Create /client/posts with the following layout:
+    - Left-Hand Sidebar: Retain gradient (#1C2526 to #0D1214), text #FFFFFF, active items #FF6200.
+    - Right-Hand Pane:
+      - Background: #FFFFFF.
+      - Text: #1A1A1A (primary), #E8ECEF (secondary).
+      - Buttons: #FF6200 with #FFFFFF text, hover #FF8C42.
+  - Sub-Menu: "Create Post", "Scheduled Posts", "Analytics".
+  - Create Post:
+    - Dropdown to select a GBP (only those linked to active campaigns, #FF6200 border on focus).
+    - Post Type selector (Update, Offer, Event, Product Post, #FF6200 buttons).
+    - Manual Input: Title, description (1500 char limit), photo/video URL (mock upload), CTA dropdown (#FF6200), start/end dates (for Offers/Events), coupon code, terms.
+    - AI Option: Toggle (#FF6200) to "Generate with AI". Inputs: Seed keyword (default from Campaigns), GBP category (auto-filled), optional topic. Cost: 2 credits (our API), free (client’s API key). Editable text area with "Regenerate" button (#4A3C7A).
+    - Visual Preview: Mock Google Search layout (glassmorphism, #FFFFFF background).
+    - Scheduling: "Post Immediately" or "Schedule" with date picker (default current time, #FF6200 button).
+  - Scheduled Posts:
+    - Calendar View: Default Month, buttons/dropdown for Month/Week/Day (react-big-calendar).
+    - Post Cards: Glassmorphism (rgba(255, 255, 255, 0.8), blur(10px), border #FF6200), text #1A1A1A.
+    - Features: Best Time Suggestion (#4A3C7A text), Expiration Reminder (toast #FF6200), Evergreen Queue toggle (#FF6200).
+  - Analytics:
+    - Table: Post title, type, status, views, CTA clicks (text #1A1A1A).
+    - Chart: Line chart (Chart.js, #4A3C7A) for views over time.
+  - Notifications: Toast (#FF6200) for post actions, mock email for scheduling.
+
+- Design:
+  - Use #FF6200 for buttons/icons, #4A3C7A for charts, #D32F2F for alerts.
+  - Framer Motion: Fade-in cards, scale hover for buttons.
+  - Montserrat font: 24px bold headings, 16px body.
+
+- Interdependencies:
+  - Use Campaigns keywords for AI.
+  - Sync to Reports for PDF export (js-pdf).
+
+- Testing:
+  - Verify GBP selection and color consistency.
+  - Test AI generation and credit deduction.
+  - Ensure calendar views work.

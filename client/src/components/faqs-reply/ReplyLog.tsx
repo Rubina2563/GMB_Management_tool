@@ -1,0 +1,536 @@
+import React, { useState, useRef } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { StableDialog, StableDialogContent } from "@/components/ui/stable-dialog";
+import { useToast } from "@/hooks/use-toast";
+import { Loader2, Copy, ExternalLink, Check, MessageSquare } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+interface ReplyLogProps {
+  locationId: string | number;
+  currentTab: string;
+  setParentTab?: (tab: string) => void;
+}
+
+interface FaqReply {
+  id: number;
+  faq_id: number | null;
+  question: string;
+  suggested_answer: string;
+  confidence_score: number;
+  status: 'pending' | 'approved' | 'rejected' | 'manual';
+  gbp_question_url: string;
+  timestamp: string;
+  faq_question?: string;
+}
+
+const ReplyLog: React.FC<ReplyLogProps> = ({ locationId, currentTab, setParentTab }) => {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [selectedReply, setSelectedReply] = useState<FaqReply | null>(null);
+  const [customReply, setCustomReply] = useState('');
+  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
+  const [isCustomDialogOpen, setIsCustomDialogOpen] = useState(false);
+  const [activeFilter, setActiveFilter] = useState<'all' | 'pending' | 'approved' | 'rejected' | 'manual'>('all');
+  const copyTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [copiedId, setCopiedId] = useState<number | null>(null);
+
+  // Fetch FAQ replies from the server
+  const { data: repliesData, isLoading, isError, error } = useQuery({
+    queryKey: ['faq-replies', locationId],
+    queryFn: async () => {
+      const response = await fetch(`/api/client/gbp-faq/location/${locationId}/faq-replies`, {
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to load FAQ replies');
+      }
+      
+      const data = await response.json();
+      if (!data.success) {
+        throw new Error(data.message || 'Failed to load FAQ replies');
+      }
+      
+      return data.replies;
+    },
+  });
+
+  // Update reply status
+  const updateReplyStatusMutation = useMutation({
+    mutationFn: async ({ replyId, status }: { replyId: number; status: 'pending' | 'approved' | 'rejected' | 'manual' }) => {
+      const response = await fetch(`/api/client/gbp-faq/location/${locationId}/faq-replies/${replyId}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ status }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to update reply status');
+      }
+      
+      const data = await response.json();
+      if (!data.success) {
+        throw new Error(data.message || 'Failed to update reply status');
+      }
+      
+      return data.reply;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['faq-replies', locationId] });
+      toast({
+        title: "Success",
+        description: "Reply status updated successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update reply status",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Update reply with custom answer
+  const updateReplyMutation = useMutation({
+    mutationFn: async ({ replyId, answer }: { replyId: number; answer: string }) => {
+      const response = await fetch(`/api/client/gbp-faq/location/${locationId}/faq-replies/${replyId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          suggested_answer: answer,
+          status: 'manual',
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to update reply');
+      }
+      
+      const data = await response.json();
+      if (!data.success) {
+        throw new Error(data.message || 'Failed to update reply');
+      }
+      
+      return data.reply;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['faq-replies', locationId] });
+      setCustomReply('');
+      setIsCustomDialogOpen(false);
+      toast({
+        title: "Success",
+        description: "Custom reply saved successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save custom reply",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Filter replies based on active filter
+  const filteredReplies = repliesData ? 
+    (activeFilter === 'all' 
+      ? repliesData 
+      : repliesData.filter((reply: FaqReply) => reply.status === activeFilter)
+    ) : [];
+
+  // Handle approve action
+  const handleApprove = (reply: FaqReply) => {
+    updateReplyStatusMutation.mutate({ replyId: reply.id, status: 'approved' });
+  };
+
+  // Handle reject action
+  const handleReject = (reply: FaqReply) => {
+    updateReplyStatusMutation.mutate({ replyId: reply.id, status: 'rejected' });
+  };
+
+  // Handle custom reply
+  const handleCustomReply = () => {
+    if (!selectedReply) return;
+    
+    if (!customReply.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Custom reply cannot be empty",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    updateReplyMutation.mutate({ replyId: selectedReply.id, answer: customReply });
+  };
+  
+  // Handle opening custom reply dialog
+  const handleOpenCustomReplyDialog = (reply: FaqReply) => {
+    setSelectedReply(reply);
+    setCustomReply(reply.suggested_answer);
+    setIsDetailsDialogOpen(false);
+    setIsCustomDialogOpen(true);
+  };
+
+  // Handle copy to clipboard
+  const handleCopy = (text: string, id: number) => {
+    navigator.clipboard.writeText(text)
+      .then(() => {
+        setCopiedId(id);
+        if (copyTimeoutRef.current) {
+          clearTimeout(copyTimeoutRef.current);
+        }
+        copyTimeoutRef.current = setTimeout(() => {
+          setCopiedId(null);
+        }, 2000);
+        
+        toast({
+          title: "Copied!",
+          description: "Reply copied to clipboard",
+          duration: 2000,
+        });
+      })
+      .catch(() => {
+        toast({
+          title: "Error",
+          description: "Failed to copy text",
+          variant: "destructive",
+        });
+      });
+  };
+
+  // Format confidence score as percentage
+  const formatConfidence = (score: number) => {
+    return `${Math.round(score * 100)}%`;
+  };
+
+  // Get badge color based on confidence score
+  const getConfidenceBadgeColor = (score: number) => {
+    if (score >= 0.9) return "bg-green-100 text-green-800 hover:bg-green-200";
+    if (score >= 0.7) return "bg-yellow-100 text-yellow-800 hover:bg-yellow-200";
+    return "bg-red-100 text-red-800 hover:bg-red-200";
+  };
+
+  // Get badge color based on status
+  const getStatusBadgeColor = (status: string) => {
+    switch (status) {
+      case 'approved': return "bg-green-100 text-green-800";
+      case 'rejected': return "bg-red-100 text-red-800";
+      case 'manual': return "bg-blue-100 text-blue-800";
+      default: return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  // Format date for display
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+  };
+
+  return (
+    <div className="space-y-6">
+      <Card className="bg-dark-base/5">
+        <CardHeader className="bg-dark-base/10 border-b border-dark-darker/20">
+          <CardTitle className="text-xl text-black">Reply Log</CardTitle>
+          <CardDescription className="text-black">Review and manage automated replies to customer questions</CardDescription>
+        </CardHeader>
+        <CardContent className="bg-dark-base/5 border-[#F28C38] border">
+          <Tabs value={activeFilter} onValueChange={(value) => setActiveFilter(value as any)} className="mb-4">
+            <TabsList>
+              <TabsTrigger value="all" className="text-black">All</TabsTrigger>
+              <TabsTrigger value="pending" className="text-black">Pending</TabsTrigger>
+              <TabsTrigger value="approved" className="text-black">Approved</TabsTrigger>
+              <TabsTrigger value="rejected" className="text-black">Rejected</TabsTrigger>
+              <TabsTrigger value="manual" className="text-black">Manual</TabsTrigger>
+            </TabsList>
+          </Tabs>
+          
+          {isLoading ? (
+            <div className="flex justify-center items-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-[#F28C38]" />
+            </div>
+          ) : isError ? (
+            <div className="bg-red-900/10 p-4 rounded-md text-red-700">
+              <p className="text-black">Error loading replies: {error instanceof Error ? error.message : 'Unknown error'}</p>
+            </div>
+          ) : (filteredReplies.length === 0) ? (
+            <div className="bg-dark-base/10 p-6 rounded-md text-center">
+              <p className="text-black mb-4">No {activeFilter !== 'all' ? activeFilter + ' ' : ''}replies found.</p>
+              {activeFilter !== 'all' && (
+                <Button 
+                  variant="outline"
+                  onClick={() => setActiveFilter('all')}
+                >
+                  View All Replies
+                </Button>
+              )}
+            </div>
+          ) : (
+            <div className="rounded-md border border-dark-darker/30">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-dark-base/20">
+                    <TableHead className="w-[25%] text-black">Question</TableHead>
+                    <TableHead className="w-[25%] text-black">Suggested Answer</TableHead>
+                    <TableHead className="w-[15%] text-black">Match</TableHead>
+                    <TableHead className="w-[10%] text-black">Confidence</TableHead>
+                    <TableHead className="w-[10%] text-black">Status</TableHead>
+                    <TableHead className="w-[15%] text-right text-black">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredReplies.map((reply: FaqReply) => (
+                    <TableRow key={reply.id}>
+                      <TableCell className="font-medium text-black">
+                        {reply.question.length > 60 ? `${reply.question.substring(0, 60)}...` : reply.question}
+                      </TableCell>
+                      <TableCell className="text-sm text-black">
+                        {reply.suggested_answer.length > 60 ? `${reply.suggested_answer.substring(0, 60)}...` : reply.suggested_answer}
+                      </TableCell>
+                      <TableCell>
+                        {reply.faq_question ? (
+                          <span className="text-sm text-black">{reply.faq_question.length > 30 ? `${reply.faq_question.substring(0, 30)}...` : reply.faq_question}</span>
+                        ) : (
+                          <span className="text-sm text-black/70">No match</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={getConfidenceBadgeColor(reply.confidence_score)}>
+                          {formatConfidence(reply.confidence_score)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={getStatusBadgeColor(reply.status)}>
+                          {reply.status.charAt(0).toUpperCase() + reply.status.slice(1)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end space-x-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            title="View Details"
+                            className="text-[#F28C38] hover:text-[#E67A17] hover:bg-orange-100"
+                            onClick={() => {
+                              setSelectedReply(reply);
+                              setCustomReply(reply.suggested_answer);
+                              setIsDetailsDialogOpen(true);
+                            }}
+                          >
+                            <MessageSquare className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            title="Copy Reply"
+                            className="text-[#F28C38] hover:text-[#E67A17] hover:bg-orange-100"
+                            onClick={() => handleCopy(reply.suggested_answer, reply.id)}
+                          >
+                            {copiedId === reply.id ? (
+                              <Check className="h-4 w-4 text-green-500" />
+                            ) : (
+                              <Copy className="h-4 w-4" />
+                            )}
+                          </Button>
+                          {reply.gbp_question_url && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              title="Open in GBP"
+                              className="text-[#F28C38] hover:text-[#E67A17] hover:bg-orange-100"
+                              onClick={() => window.open(reply.gbp_question_url, '_blank')}
+                            >
+                              <ExternalLink className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Reply Details Dialog */}
+      <StableDialog open={isDetailsDialogOpen} onOpenChange={setIsDetailsDialogOpen}>
+        <StableDialogContent className="sm:max-w-[650px] bg-white">
+          <DialogHeader>
+            <DialogTitle className="text-black">Reply Details</DialogTitle>
+            <DialogDescription className="text-black">
+              View and manage this automated reply
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <h3 className="font-semibold text-black">Question</h3>
+              <p className="bg-dark-base/10 p-3 rounded text-black border border-[#F28C38]">{selectedReply?.question}</p>
+            </div>
+            <div className="grid gap-2">
+              <div className="flex justify-between items-center">
+                <h3 className="font-semibold text-black">Suggested Answer</h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="flex items-center text-xs h-7 text-[#F28C38] hover:text-[#E67A17] hover:bg-orange-100"
+                  onClick={() => selectedReply && handleCopy(selectedReply.suggested_answer, selectedReply.id)}
+                >
+                  {copiedId === selectedReply?.id ? (
+                    <>
+                      <Check className="mr-1 h-3 w-3 text-green-500" />
+                      Copied!
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="mr-1 h-3 w-3" />
+                      Copy
+                    </>
+                  )}
+                </Button>
+              </div>
+              <p className="bg-dark-base/10 p-3 rounded text-black border border-[#F28C38]">{selectedReply?.suggested_answer}</p>
+            </div>
+            {selectedReply?.faq_question && (
+              <div className="grid gap-2">
+                <h3 className="font-semibold text-black">Matching FAQ</h3>
+                <p className="bg-dark-base/10 p-3 rounded text-black border border-[#F28C38]">{selectedReply.faq_question}</p>
+              </div>
+            )}
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <h3 className="font-semibold mb-2 text-black">Confidence</h3>
+                <Badge className={selectedReply ? getConfidenceBadgeColor(selectedReply.confidence_score) : ""}>
+                  {selectedReply ? formatConfidence(selectedReply.confidence_score) : ""}
+                </Badge>
+              </div>
+              <div>
+                <h3 className="font-semibold mb-2 text-black">Status</h3>
+                <Badge className={selectedReply ? getStatusBadgeColor(selectedReply.status) : ""}>
+                  {selectedReply ? selectedReply.status.charAt(0).toUpperCase() + selectedReply.status.slice(1) : ""}
+                </Badge>
+              </div>
+              <div>
+                <h3 className="font-semibold mb-2 text-black">Timestamp</h3>
+                <span className="text-sm text-black">{selectedReply ? formatDate(selectedReply.timestamp) : ""}</span>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <div className="flex justify-between w-full">
+              <div>
+                {selectedReply && selectedReply.status === 'pending' && (
+                  <>
+                    <Button 
+                      variant="destructive"
+                      className="mr-2"
+                      onClick={() => {
+                        handleReject(selectedReply);
+                        setIsDetailsDialogOpen(false);
+                      }}
+                    >
+                      Reject
+                    </Button>
+                    <Button 
+                      className="bg-green-600 hover:bg-green-700 text-white"
+                      onClick={() => {
+                        handleApprove(selectedReply);
+                        setIsDetailsDialogOpen(false);
+                      }}
+                    >
+                      Approve
+                    </Button>
+                  </>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline"
+                  onClick={() => {
+                    if (selectedReply) {
+                      handleOpenCustomReplyDialog(selectedReply);
+                    }
+                  }}
+                >
+                  Customize
+                </Button>
+                {selectedReply?.gbp_question_url && (
+                  <Button
+                    className="bg-[#F28C38] hover:bg-[#E67A17] text-white"
+                    onClick={() => window.open(selectedReply.gbp_question_url, '_blank')}
+                  >
+                    <ExternalLink className="mr-2 h-4 w-4" />
+                    Reply on GBP
+                  </Button>
+                )}
+              </div>
+            </div>
+          </DialogFooter>
+        </StableDialogContent>
+      </StableDialog>
+
+      {/* Custom Reply Dialog */}
+      <StableDialog open={isCustomDialogOpen} onOpenChange={setIsCustomDialogOpen}>
+        <StableDialogContent className="sm:max-w-[550px] bg-white">
+          <DialogHeader>
+            <DialogTitle className="text-black">Customize Reply</DialogTitle>
+            <DialogDescription className="text-black">
+              Write a custom reply to this question
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <h3 className="font-semibold text-black">Question</h3>
+              <p className="bg-dark-base/10 p-3 rounded text-black border border-[#F28C38]">{selectedReply?.question}</p>
+            </div>
+            <div className="grid gap-2">
+              <h3 className="font-semibold text-black">Custom Reply</h3>
+              <Textarea
+                placeholder="Write your custom reply here..."
+                rows={6}
+                value={customReply}
+                onChange={(e) => setCustomReply(e.target.value)}
+                className="resize-none text-black"
+              />
+              <p className="text-xs text-black">
+                Character count: {customReply.length} / 10,000 (GBP limit)
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setIsCustomDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button 
+              className="bg-[#F28C38] hover:bg-[#E67A17] text-white"
+              onClick={handleCustomReply}
+              disabled={updateReplyMutation.isPending}
+            >
+              {updateReplyMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Save Custom Reply
+            </Button>
+          </DialogFooter>
+        </StableDialogContent>
+      </StableDialog>
+    </div>
+  );
+};
+
+export default ReplyLog;

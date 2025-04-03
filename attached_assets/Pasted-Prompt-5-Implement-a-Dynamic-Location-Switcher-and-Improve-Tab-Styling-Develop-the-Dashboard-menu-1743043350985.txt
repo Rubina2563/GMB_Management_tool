@@ -1,0 +1,39 @@
+Prompt 5: Implement a Dynamic Location Switcher and Improve Tab Styling
+Develop the "Dashboard" menu in the "LOCALAUTHORITY" React + Node.js SaaS application on Replit. Implement a dynamic location switcher and improve tab styling for consistency. Ensure the design aligns with the existing client panel, with all text in black (#000000) for visibility against the white background, and tab bars styled with a black background (#000000) and white text (#FFFFFF) when unselected, and an orange background (#F28C38) with white text (#FFFFFF) when selected.
+
+Objective
+Purpose: Enhance the "Dashboard" menu by:
+Adding a dynamic location switcher dropdown.
+Updating all components based on the selected location.
+Standardizing tab styling.
+Field Testing Goal: Enable easy location switching with consistent, appealing design.
+Backend Requirements
+Step 1: Modify the Existing Endpoint for Dashboard Data:
+Endpoint: Enhance the existing dashboard data endpoint (e.g., /api/client/dashboard).
+Purpose: Include location-specific data.
+Logic:
+Filter data (metrics, insights, activities) by the selected location ID.
+Frontend Requirements
+Step 1: Add Dynamic Location Switcher:
+Location: Add to the top bar of the "Dashboard" menu.
+Elements:
+Dropdown listing locations for the selected client.
+Styling:
+White background, black text (#000000, 16px Montserrat), orange border (#F28C38).
+Interactivity:
+Update all components (top bar, insights, activities) on location selection.
+Step 2: Improve Tab Styling:
+Tabs: Update "Local Dashboard" and "Account Overview" tabs.
+Styling:
+Unselected: Black background (#000000), white text (#FFFFFF, 16px Montserrat).
+Selected: Orange background (#F28C38), white text (#FFFFFF, 16px Montserrat).
+Design:
+Fade-in animation for tab/location switches with Framer Motion.
+Testing
+Test Case 1: Location Switching:
+Select a location and verify all components update.
+Test Case 2: Tab Styling:
+Switch tabs and confirm styling (black/white unselected, orange/white selected).
+Test Case 3: Visual Elements:
+Ensure text is black (#000000) where applicable.
+Verify switcher and tab styling consistency.

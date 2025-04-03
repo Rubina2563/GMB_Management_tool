@@ -1,0 +1,138 @@
+Let’s rewrite the prompt for the Description Generator Tab to ensure it leverages NLP and LLM tools (like OpenAI) to generate GBP descriptions based on the business’s categories, services, and products. The feature will generate 5 variations of the description, and I’ll investigate whether the updated description can be pushed to GBP via the API. If not, I’ll include a manual flow to notify the user. I’ll also align this feature with the FAQs Reply section’s approach (e.g., using NLP/LLM tools and providing manual options when automation isn’t possible).
+
+Investigation: Can GBP Descriptions Be Updated via API?
+The Google Business Profile (GBP) API allows certain profile attributes to be updated, such as business hours, categories, and photos. However, the business description (also known as the "summary" or "about" section) is not directly editable via the GBP API as of the latest documentation. The API supports reading profile data (e.g., via locations.get) and updating specific fields like storeCode or categories, but the description field is not part of the editable attributes in the locations.update endpoint.
+
+Conclusion: The GBP API does not support updating the business description programmatically. Therefore, we’ll need to include a manual flow where users are prompted to copy the generated description and update it directly in GBP.
+Updated Prompt for Description Generator Tab
+Location
+Add a new tab labeled "Description Generator" under the "GBP Management" menu in the /client/gbp-management/ section of the SaaS platform, consistent with the existing folder structure (e.g., where FAQs Reply and Image Management reside).
+
+Objective
+Enable users to generate and update their Google Business Profile (GBP) description using AI, specifically leveraging NLP and LLM tools (e.g., OpenAI) to analyze the business’s categories, services, products, and other GBP data. The tool will generate 5 variations of the description, allow users to edit and approve them, and either push the updated description to GBP via the API (if supported) or provide a manual flow for users to update it themselves.
+
+Design Specifications
+Background: White (#FFFFFF).
+Text: Black (#000000), 16px Montserrat font.
+Tab Bar:
+Unselected: Black background (#000000), white text (#FFFFFF).
+Selected: Orange background (#F28C38), white text (#FFFFFF).
+Buttons: Orange background (#F28C38) with white text (#FFFFFF).
+Backend Requirements
+Endpoint: /api/client/gbp/description-generator
+Method: POST
+Request Body:
+json
+
+Collapse
+
+Wrap
+
+Copy
+{
+  "locationId": "string", // GBP location ID
+  "businessDetails": {
+    "categories": ["string"], // e.g., ["Coffee Shop", "Cafe"]
+    "services": ["string"],   // e.g., ["Espresso", "Pastries"]
+    "products": ["string"],   // e.g., ["Coffee Beans", "Mugs"]
+    "uniqueSellingPoints": ["string"] // e.g., ["Locally Sourced", "Pet-Friendly"]
+  },
+  "tone": "string" // e.g., "professional", "casual", "friendly"
+}
+Response:
+json
+
+Collapse
+
+Wrap
+
+Copy
+{
+  "success": "boolean",
+  "descriptions": ["string"], // Array of 5 generated descriptions
+  "canAutoUpdate": "boolean", // Indicates if API update is supported
+  "manualInstructions": "string" // Instructions for manual update if needed
+}
+Logic:
+Fetch GBP Data: Use the GBP API (locations.get) to retrieve the business’s existing data (e.g., categories, services) for the specified locationId.
+Enhance with User Input: Combine the fetched GBP data with the user-provided businessDetails (e.g., additional services, products, unique selling points).
+NLP/LLM Processing:
+Use spaCy (default) for basic NLP tasks like extracting key entities from the business data (e.g., identifying "coffee" as a product).
+Use OpenAI (if configured with a user-provided API key) to generate 5 description variations. Example OpenAI prompt:
+text
+
+Collapse
+
+Wrap
+
+Copy
+Generate 5 unique Google Business Profile descriptions (max 750 characters each) for a business with the following details:
+- Categories: [Coffee Shop, Cafe]
+- Services: [Espresso, Pastries]
+- Products: [Coffee Beans, Mugs]
+- Unique Selling Points: [Locally Sourced, Pet-Friendly]
+- Tone: [professional/casual/friendly]
+Ensure each description is concise, engaging, and highlights the business’s unique features.
+Check API Support: Since the GBP API does not support updating descriptions, set canAutoUpdate to false and provide manualInstructions:
+text
+
+Collapse
+
+Wrap
+
+Copy
+The GBP API does not support updating descriptions automatically. Please copy the selected description and paste it into your Google Business Profile under the 'About' section. Visit GBP here: [link to GBP profile].
+Frontend Design
+Layout:
+Location Selector: A dropdown to select the GBP location (e.g., "Store #1 - 123 Main St, City").
+Input Form:
+Fields for additional business details (categories, services, products, unique selling points).
+A tone dropdown (e.g., "Professional", "Casual", "Friendly").
+Suggestions Area: Display 5 AI-generated descriptions in a scrollable list, each with a "Select" button.
+Edit Box: A textarea with a live character counter (max 750 characters) to edit the selected description.
+Action Button:
+If canAutoUpdate is true (future-proofing): "Update GBP Description" to push via API.
+If canAutoUpdate is false: "Copy Description for Manual Update" to copy the description to the clipboard.
+Interactivity:
+On form submission, generate 5 descriptions and display them in the suggestions area.
+Allow users to select a description, edit it in the textarea, and track character count in real-time.
+If manual update is required, show a notification:
+text
+
+Collapse
+
+Wrap
+
+Copy
+The GBP API does not support updating descriptions automatically. Please copy the description below and paste it into your Google Business Profile. [Link to GBP]
+Unique Features
+Context-Aware Descriptions: Use NLP/LLM to tailor descriptions based on GBP data (e.g., categories, services) and user inputs, ensuring relevance (similar to how FAQs Reply uses NLP for matching).
+Multi-Tone Options: Generate descriptions in different tones simultaneously (e.g., one professional, one casual) if the user selects multiple tones.
+Keyword Highlighting: Highlight user-entered keywords (e.g., "pet-friendly") in the generated descriptions for easy review.
+History Log: Save past generated descriptions in the user’s account for reuse, accessible via a "View History" button.
+Manual Flow for Description Update
+Since the GBP API does not support updating descriptions:
+
+Notification: After generating descriptions, display a message:
+text
+
+Collapse
+
+Wrap
+
+Copy
+The GBP API does not support updating descriptions automatically. Please copy the selected description and paste it into your Google Business Profile under the 'About' section. Visit GBP here: [link to GBP profile].
+Copy Button: The "Copy Description for Manual Update" button copies the edited description to the clipboard.
+Link to GBP: Provide a direct link to the user’s GBP profile (e.g., https://business.google.com/edit/l/{locationId}).
+Testing
+Description Generation:
+Test with varied inputs (e.g., different categories, services, tones) and verify that 5 unique descriptions are generated, each under 750 characters.
+Confirm that OpenAI (or spaCy as fallback) uses GBP data and user inputs to create relevant descriptions.
+Editing:
+Select a description, edit it in the textarea, and ensure the character counter updates in real-time.
+Manual Flow:
+Verify that the manual update notification appears with a working "Copy" button and GBP link.
+Test copying the description and pasting it into GBP manually.
+Alignment with FAQs Reply Section
+NLP/LLM Usage: Similar to how FAQs Reply uses spaCy (default) and OpenAI (optional) for matching questions, the Description Generator uses spaCy for basic entity extraction and OpenAI for generating descriptions.
+Manual Flow: Like FAQs Reply, which provides a manual reply option when automation isn’t possible, this feature includes a manual update flow with clear instructions and a copy button.

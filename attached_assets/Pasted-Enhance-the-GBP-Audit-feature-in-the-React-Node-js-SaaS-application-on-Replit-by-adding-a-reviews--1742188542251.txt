@@ -1,0 +1,34 @@
+Enhance the GBP Audit feature in the React + Node.js SaaS application on Replit by adding a reviews summary and analysis section:
+
+- Backend (Node.js):
+  - Update "/api/client/gbp/audit" to include reviews analysis:
+    - Fetch review data from /client/reviews (SQLite `reviews` table):
+      - Total number of reviews.
+      - Average star rating (1-5).
+      - Response rate (percentage of reviews with replies).
+      - Sentiment analysis: Use keyword-based approach (e.g., "great" for positive, "terrible" for negative) to categorize reviews as positive, neutral, negative.
+    - Evaluate:
+      - Total reviews: Recommend >50 for better prominence.
+      - Average rating: Suggest >4.0 for competitiveness.
+      - Response rate: Recommend >80% to show engagement.
+      - Sentiment: Highlight if negative reviews exceed 20%.
+    - Add to audit report: Reviews score (0-30, based on metrics) and recommendations (e.g., "Increase reviews by 20 to reach 50").
+  - Update SQLite `gbp_audits` table to store reviews summary (e.g., `reviews_info` JSON field).
+
+- Frontend (React):
+  - Update /client/gbp-audit:
+    - Add "Reviews Summary" section to the audit report:
+      - Display metrics: Total reviews, average rating, response rate, sentiment breakdown (bar chart, Chart.js, #6B5B95 bars, #F28C38 positive, #D3D7D9 neutral, #E63946 negative).
+      - Recommendations: List with bullets (#1C2526 text), "Implement" button (#F28C38 with #FFFFFF text, hover #F5A461) per suggestion (mock action with toast).
+    - Update overall score (0-100): Assign 20% weight to reviews (e.g., 3 metrics checked, 2 pass = 13/20).
+  - Design:
+    - Background: #FFFFFF.
+    - Text: #1C2526 (primary), #D3D7D9 (secondary).
+    - Framer Motion: Fade-in for cards, scale on hover for buttons.
+    - Montserrat font: 24px bold headings, 16px body.
+
+- Testing:
+  - Verify reviews data is pulled accurately from /client/reviews.
+  - Test sentiment analysis and recommendations.
+  - Confirm bar chart renders correctly.
+  - Ensure overall score updates correctly.

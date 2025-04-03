@@ -1,0 +1,56 @@
+Update the GBP Map Rankings Geo-Grid screen in the "LOCALAUTHORITY" React + Node.js SaaS application on Replit to integrate with the selected campaign, remove the top form, and add a left sidebar for selecting keywords. The map should update to show rankings for the selected keyword. Use the correct endpoint `/api/client/rankings` for fetching geo-grid rankings data.
+
+### Objective
+- **Purpose**: Make the GBP Map Rankings screen campaign-focused by:
+  - Removing the top form (Keyword, Location, Radius, Grid Size, Campaign Mode) since these are pre-configured in the selected campaign.
+  - Adding a left sidebar to display a selectable list of keywords from the selected campaign.
+  - Updating the geo-grid map to show rankings for the selected keyword using the `/api/client/rankings` endpoint.
+- **Field Testing Goal**: Ensure the screen displays campaign data, allows keyword selection, and updates the map accordingly using the correct endpoint.
+
+### Backend (Node.js)
+- **Step 1: Update `/api/client/rankings`**:
+  - **Purpose**: Fetch geo-grid rankings based on the selected campaign and keyword.
+  - **Request Query Parameters**:
+    - `keyword`: String (e.g., "local business").
+  - **Logic**:
+    - Retrieve the user’s selected campaign and validate it.
+    - Use the campaign’s configuration (location, radius, grid size, shape) to generate grid points.
+    - Fetch rankings for the specified keyword using either DataForSEO or Google Places API based on the admin’s preference (as set in Prompt 6).
+    - Return the geo-grid data and metrics.
+    ```javascript
+    const userId = req.session.user.id;
+    const user = await db.collection('users').findOne({ _id: new ObjectId(userId) });
+    const campaign = await db.collection('campaigns').findOne({ _id: new ObjectId(user.selectedCampaignId) });
+    if (!campaign) {
+      return res.status(404).json({ error: 'No campaign selected' });
+    }
+    if (!campaign.keywords.includes(req.query.keyword)) {
+      return res.status(400).json({ error: 'Keyword not found in campaign' });
+    }
+    const keyword = req.query.keyword || campaign.keywords[0]; // Default to the first keyword if not specified
+    const apiPreference = await db.collection('settings').findOne({ key: 'geoGridApiPreference' }) || { preferredApi: 'dataforseo' };
+    
+    // Generate grid points based on campaign configuration
+    const gridPoints = generateGridPoints(campaign.location, campaign.radiusMiles, campaign.gridSize, campaign.gridShape);
+    const geoGridData = [];
+    
+    if (apiPreference.preferredApi === 'dataforseo') {
+      // Fetch rankings using DataForSEO API for the given keyword
+      for (const point of gridPoints) {
+        const rank = await fetchDataForSeoRanking(point.lat, point.lng, keyword);
+        geoGridData.push({ lat: point.lat, lng: point.lng, rank, inTop3: rank <= 3 });
+      }
+    } else {
+      // Fetch rankings using Google Places API for the given keyword
+      for (const point of gridPoints) {
+        const rank = await fetchGooglePlacesRanking(point.lat, point.lng, keyword);
+        geoGridData.push({ lat: point.lat, lng: point.lng, rank, inTop3: rank <= 3 });
+      }
+    }
+    
+    // Calculate metrics
+    const afpr = calculateAFPR(geoGridData);
+    const tgrm = calculateTGRM(geoGridData);
+    const tss = calculateTSS(geoGridData);
+    
+    res.json({ afpr, tgrm, tss, gridData: geoGridData, apiUsed: apiPreference.preferredApi });

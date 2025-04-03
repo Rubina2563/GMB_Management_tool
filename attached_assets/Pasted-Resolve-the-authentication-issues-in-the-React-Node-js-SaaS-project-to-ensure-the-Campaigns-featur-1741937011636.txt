@@ -1,0 +1,30 @@
+Resolve the authentication issues in the React + Node.js SaaS project to ensure the Campaigns feature works seamlessly:
+- Backend:
+  - Verify the login endpoint ("/api/auth/login"):
+    - Ensure it accepts valid credentials (mock user: email "admin@rolextest.com", password "Admin123!").
+    - Confirm password hashing/verification works (using bcrypt).
+    - Return a JWT token with user role ("admin" or "client") and subscription status in the payload.
+  - Add a token refresh endpoint ("/api/auth/refresh"):
+    - Accept the current token, validate it, and return a new token (mock expiration: 1 hour).
+  - Update the campaigns endpoints ("/api/client/campaigns/*") to:
+    - Validate the JWT token using the correct secret key.
+    - Return a 401 Unauthorized error with a clear message if the token is invalid or missing.
+- Frontend:
+  - Update the authentication flow:
+    - On successful login, store the JWT token in localStorage (key: "authToken").
+    - Create a utility function (e.g., `getAuthToken`) to retrieve the token from localStorage.
+  - Update API requests:
+    - Use axios with an interceptor to add the Authorization header (`Bearer <token>`) to all requests.
+    - Handle 401 Unauthorized errors: Clear localStorage, redirect to /login, and show a toast message ("Session expired, please log in again").
+  - Add token refresh logic:
+    - Before making API calls, check if the token is near expiration (e.g., within 5 minutes).
+    - If near expiration, call "/api/auth/refresh" to get a new token and update localStorage.
+  - Debug login issues:
+    - Test login with mock credentials (email "admin@rolextest.com", password "Admin123!").
+    - Ensure role-based redirection works (admin: /admin/dashboard, client: /client/dashboard).
+  - Test CampaignsPage.tsx:
+    - Confirm API calls to "/api/client/campaigns/*" return data when authenticated.
+    - Display a loading state while fetching, and handle errors gracefully (e.g., "Failed to load campaigns").
+  - Design:
+    - Use a toast notification (bg-[#006039], text-[#f4f4f2]) for authentication errors.
+    - Maintain Montserrat font and Rolex colors.

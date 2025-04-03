@@ -1,0 +1,55 @@
+Update the color palette of the entire React + Node.js SaaS application and frontend website to align with a new sleek, modern fitness-inspired aesthetic:
+- Frontend:
+  - Replace the existing Rolex-inspired palette (dark green #006039, light green #9eca9e, gold #a37e2c, off-white #f4f4f2) with the following new palette:
+    - Primary Colors:
+      - Base Color: Dark Gray/Black (#1C2526) – Use for primary backgrounds (e.g., sidebar, headers, modals).
+      - Gradient Accent: Dark Gray to Black (#1C2526 to #0D1214) – Apply as a vertical gradient in backgrounds (e.g., sidebar, login page).
+    - Secondary Colors:
+      - Accent Color: Orange (#F28C38) – Use for primary buttons, call-to-action elements, and highlights (e.g., active sidebar items, wizard buttons).
+      - Gradient Accent: Orange to Light Orange (#F28C38 to #F5A461) – Use for button hover effects and subtle highlights (e.g., hover states on cards).
+    - Supporting Colors:
+      - Text Color: White (#FFFFFF) – Primary text color for readability on dark backgrounds.
+      - Secondary Text/Background: Light Gray (#D3D7D9) – Use for secondary text, borders, or inactive states (e.g., disabled buttons, placeholder text).
+      - Tech Accent: Purple (#6B5B95) – Use for data visualizations, charts, or tech-related highlights (e.g., geo-grid rankings, progress bars).
+      - Alert/Indicator: Red (#E63946) – Use for critical notifications or indicators (e.g., low rankings, errors, failed API tests).
+  - Apply the new palette across all pages and components:
+    - Login Page (/login):
+      - Background: Gradient from #1C2526 to #0D1214.
+      - Form: Glassmorphism effect (rgba(255, 255, 255, 0.1), blur(10px), border #F28C38).
+      - Text: #FFFFFF (primary), #D3D7D9 (secondary, e.g., "Forgot Password").
+      - Button: #F28C38 with hover gradient to #F5A461 (Framer Motion: scale on hover).
+    - Sidebar:
+      - Background: Gradient #1C2526 to #0D1214.
+      - Text: #FFFFFF (active items), #D3D7D9 (inactive items).
+      - Active Item: Highlight with #F28C38 and a subtle #6B5B95 glow (box-shadow).
+    - Dashboards (/admin/dashboard, /client/dashboard):
+      - Background: #1C2526 with a subtle gradient to #0D1214 in headers.
+      - KPI Cards: Background #D3D7D9, text #1C2526, border #F28C38.
+      - Charts: Use #6B5B95 for primary data, #F28C38 for secondary data.
+      - Alerts: Use #E63946 for critical notifications.
+    - Campaigns Page (/client/campaigns):
+      - Geo-Grid Map: Rankings color-coded – top 3: #F28C38, 4-7: #F5A461, 8-10: #6B5B95, 11-20: #D3D7D9, below 20: #E63946.
+      - Keyword Sidebar: Background #D3D7D9, text #1C2526, "Primary" keywords with #F28C38 star, "Secondary" with #6B5B95 underline.
+      - Wizard: Buttons #F28C38 with hover #F5A461, background #1C2526, text #FFFFFF.
+    - All Other Pages (Optimization, etc.):
+      - Background: #1C2526 with gradient sections.
+      - Buttons: #F28C38 with hover #F5A461.
+      - Text: #FFFFFF (primary), #D3D7D9 (secondary).
+      - Data Visualizations: Use #6B5B95 for charts, #E63946 for alerts.
+  - Accessibility:
+    - Ensure contrast ratios meet WCAG AA standards (e.g., #FFFFFF on #1C2526 for text).
+    - Use #D3D7D9 sparingly to avoid low contrast with #1C2526.
+  - Design Enhancements:
+    - Apply gradients for depth (e.g., sidebar, headers, card hovers).
+    - Use Framer Motion for hover effects (e.g., scale buttons, fade-in cards).
+    - Maintain Montserrat font (24px bold headings, 16px body text).
+    - Use Heroicons with #FFFFFF for icons, #F28C38 for active states.
+  - Consistency:
+    - Ensure all buttons use #F28C38 with #F5A461 hover gradient.
+    - Limit #6B5B95 and #E63946 to 5-10% of the design (e.g., charts, alerts).
+- Backend:
+  - Update any API responses that include color-related data (e.g., campaign rankings) to reflect the new palette (e.g., return color codes for rankings: #F28C38 for top 3, etc.).
+- Testing:
+  - Test the UI for visual consistency across all pages.
+  - Verify accessibility with a contrast checker (e.g., WebAIM).
+  - Ensure animations (Framer Motion) remain smooth and performant.

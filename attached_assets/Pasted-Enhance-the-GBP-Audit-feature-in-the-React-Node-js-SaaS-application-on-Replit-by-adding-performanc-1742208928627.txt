@@ -1,0 +1,38 @@
+Enhance the GBP Audit feature in the React + Node.js SaaS application on Replit by adding performance data analysis for the last 6 months:
+
+- Backend (Node.js):
+  - Update "/api/client/gbp/audit" to include performance data:
+    - Use Google Business Profile API (mock for now) to pull metrics for the last 6 months (Sep 16, 2024 - Mar 16, 2025):
+      - Overview: Total interactions (sum of all actions).
+      - Calls: Clicks on call button.
+      - Bookings: Completed bookings.
+      - Direction Requests: Unique users requesting directions.
+      - Website Clicks: Clicks on website link.
+      - Messages: Unique conversations.
+      - Searches: Top queries (e.g., "plumber near me").
+    - Calculate month-over-month trends (e.g., "Website clicks up 10% since January").
+    - Evaluate:
+      - Compare to benchmarks (mock: e.g., avg calls >100/month for similar businesses).
+      - Highlight declines (e.g., "Direction requests down 15% since December").
+    - Add to audit report: Performance score (0-20) and recommendations (e.g., "Add a stronger CTA in posts to boost website clicks").
+  - Update SQLite `gbp_audits` table to store performance data (e.g., `performance_info` JSON field).
+  - Update "/api/client/gbp/insights" to include performance trends.
+
+- Frontend (React):
+  - Update /client/gbp-audit:
+    - Add "Performance Data" section to the audit report:
+      - Display metrics in a table: Overview, calls, bookings, directions, website clicks, messages, searches.
+      - Line chart (Chart.js, #6B5B95) for trends (e.g., website clicks over 6 months).
+      - Recommendations: List with bullets (#1C2526 text), "Implement" button (#F28C38 with #FFFFFF text, hover #F5A461) per suggestion (mock action with toast).
+    - Update overall score (0-100): Assign 20% weight to performance (e.g., 5 metrics checked, 4 pass = 16/20).
+  - Design:
+    - Background: #FFFFFF.
+    - Text: #1C2526 (primary), #D3D7D9 (secondary).
+    - Framer Motion: Fade-in for cards, scale on hover for buttons.
+    - Montserrat font: 24px bold headings, 16px body.
+
+- Testing:
+  - Verify performance data accuracy (mock API response).
+  - Test trend calculations and chart rendering.
+  - Confirm recommendations are actionable.
+  - Ensure overall score updates correctly.

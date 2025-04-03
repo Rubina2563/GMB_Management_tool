@@ -1,0 +1,57 @@
+Updated Prompt
+Below is the updated prompt for the "Image Optimization" tab, keeping the core functionality intact but explicitly addressing the lack of image analytics. I’ve added an "Analytics Consideration" section to clarify this for your team and ensure the feature aligns with what the GBP API can actually support.
+
+1. Image Optimization Tab
+
+Location: Add a new tab labeled "Image Optimization" under the "GBP Management" menu.
+
+Objective
+
+Enable users to upload images, optimize them with GEO tags, custom file names, alt text, and keywords, and push them to their Google Business Profile (GBP) via the GBP API.
+
+Design Specifications
+
+Background: White (#FFFFFF).
+Text: Black (#000000, 16px Montserrat font).
+Tab Bar:
+Unselected: Black background (#000000), white text (#FFFFFF).
+Selected: Orange background (#F28C38), white text (#FFFFFF).
+Buttons: Orange background (#F28C38) with white text (#FFFFFF).
+Backend Requirements
+
+Endpoint: /api/client/gbp/image-optimization
+Method: POST
+Request Body:
+images: Array of image files (e.g., JPEG, PNG).
+optimizations: Array of objects with geoTag (latitude, longitude), fileName, altText, keywords.
+Response:
+success: Boolean.
+uploadedImages: Array of GBP image URLs or IDs.
+Logic:
+Validate image formats (JPEG, PNG) and size (<5MB).
+Embed GEO tags in EXIF metadata or store separately if unsupported.
+Push optimized images to GBP via the GBP API.
+Frontend Design
+
+Layout:
+Upload Area: Drag-and-drop zone with a "Browse Files" button.
+Optimization Form: Per-image fields for GEO tags (with map picker), file name, alt text, and keywords.
+Preview Pane: Show image previews with applied optimizations.
+Action Button: "Push to GBP" button to upload.
+Interactivity:
+Support batch uploads.
+Validate inputs (e.g., valid coordinates, character limits).
+Show success/error messages post-upload.
+Unique Features
+
+Interactive Map Picker: Click on a map to set GEO tags visually.
+Optimization Templates: Predefined settings (e.g., "Retail Store") for quick setup.
+Auto-Keyword Suggestions: Suggest keywords based on image content using AI.
+Testing
+
+Upload multiple images with optimizations and verify GBP integration.
+Test map picker accuracy for GEO tags.
+Ensure error messages display for invalid inputs.
+Analytics Consideration
+
+The Google Business Profile API does not provide analytics data specifically for individual images (e.g., views, clicks, or engagement metrics). Therefore, this feature should focus solely on uploading and optimizing images, without including any functionality or display related to image-specific analytics. If the SaaS application currently attempts to show such data, that part should be removed. Optionally, you could display overall profile metrics (e.g., total profile views) to provide context, but these cannot be attributed to specific images.

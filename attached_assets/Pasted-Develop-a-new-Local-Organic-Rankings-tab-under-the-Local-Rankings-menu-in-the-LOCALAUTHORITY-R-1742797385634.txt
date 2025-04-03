@@ -1,0 +1,158 @@
+Develop a new "Local Organic Rankings" tab under the "Local Rankings" menu in the "LOCALAUTHORITY" React + Node.js SaaS application on Replit. This tab will focus on tracking organic keyword rankings for websites associated with the selected campaign, providing a detailed view of keyword performance over time. The design should align with the existing GBP Map Rankings screen, ensuring all text is black (#000000) for visibility against the white background, and tab bars (for switching between tabs like "GBP Map Rankings" and "Local Organic Rankings") should have a black background (#000000) with white text (#FFFFFF) when unselected, and an orange background (#F28C38) with white text (#FFFFFF) when selected. Do not include keyword research features, as they are not relevant for this tab.
+
+### Objective
+- **Purpose**: Create a "Local Organic Rankings" tab that allows users to:
+  - View organic keyword rankings for the website associated with the selected campaign.
+  - Track changes in rankings over time, including position changes, historical trends, and key metrics.
+  - Filter and sort keywords to analyze performance effectively.
+- **Field Testing Goal**: Ensure the tab provides a clear and actionable view of organic keyword rankings, aligns with the app’s design (black text on white background), and allows users to interact with the data (e.g., filtering, sorting, viewing trends).
+
+### Backend Requirements
+- **Step 1: Create a New Endpoint for Organic Keyword Rankings**:
+  - **Endpoint**: Create a new endpoint under the "Local Rankings" menu to fetch organic keyword rankings for the selected campaign (e.g., `/api/client/local-organic-rankings`).
+  - **Purpose**: Fetch organic keyword rankings for the website associated with the selected campaign, including historical data for trend analysis.
+  - **Request Query Parameters**:
+    - `dateRange`: String (e.g., "last7days", "last30days", "last90days", "custom") - Filter historical data by date range.
+    - `startDate`: String (e.g., "2025-03-01") - Start date for custom date range (required if `dateRange` is "custom").
+    - `endDate`: String (e.g., "2025-03-23") - End date for custom date range (required if `dateRange` is "custom").
+    - `sortBy`: String (e.g., "keyword", "currentRank", "change") - Sort the results by a specific column.
+    - `sortOrder`: String (e.g., "asc", "desc") - Sort order (ascending or descending).
+  - **Response Data**:
+    - **Campaign Details**:
+      - `website`: The website URL associated with the campaign (e.g., "https://doctortoyou.com.au").
+      - `location`: The target location for the campaign (e.g., "Australia").
+      - `language`: The target language (e.g., "English").
+    - **Keyword Rankings**: An array of objects, each representing a tracked keyword, with the following fields:
+      - `keyword`: The keyword (e.g., "24 hour chemist near me open now").
+      - `tags`: Array of tags associated with the keyword (e.g., ["urgent", "health"]).
+      - `currentRank`: The current organic rank (e.g., 100).
+      - `previousRank`: The rank from the previous scan (e.g., 100).
+      - `change`: The change in rank since the last scan (e.g., 0 for no change, +5 for improved, -3 for declined).
+      - `bestRank`: The best rank ever achieved for this keyword (e.g., 94).
+      - `searchVolume`: The monthly search volume for the keyword (fetched via DataForSEO, e.g., 5400).
+      - `cpc`: The cost-per-click for the keyword (fetched via DataForSEO, e.g., 6.03).
+      - `competition`: The competition level for the keyword (fetched via DataForSEO, e.g., 0.02, on a scale of 0-1).
+      - `lastUpdated`: The date and time of the last rank check (e.g., "24/03/2025 13:56").
+      - `history`: An array of historical rank data for the keyword within the selected date range, with each entry including:
+        - `date`: The date of the scan (e.g., "2025-03-20").
+        - `rank`: The rank on that date (e.g., 100).
+      - Example: `[{ keyword: "24 hour chemist near me open now", tags: ["urgent", "health"], currentRank: 100, previousRank: 100, change: 0, bestRank: 94, searchVolume: 5400, cpc: 6.03, competition: 0.02, lastUpdated: "24/03/2025 13:56", history: [{ date: "2025-03-20", rank: 100 }, ...] }, ...]`.
+    - **Summary Metrics**:
+      - `totalKeywords`: Total number of tracked keywords (e.g., 58).
+      - `keywordsUp`: Number of keywords that improved in rank (e.g., 9).
+      - `keywordsNoChange`: Number of keywords with no rank change (e.g., 39).
+      - `keywordsDown`: Number of keywords that declined in rank (e.g., 10).
+      - `keywordsTop3`: Number of keywords in the top 3 positions (e.g., 0).
+      - `keywordsTop10`: Number of keywords in the top 10 positions (e.g., 0).
+      - `keywordsTop100`: Number of keywords in the top 100 positions (e.g., 44).
+      - `projectValue`: Estimated monthly value of the keywords (e.g., 0.6, in dollars).
+  - **Logic**:
+    - Retrieve the user’s selected campaign and validate it.
+    - Fetch the website URL, location, and language from the campaign configuration.
+    - Query the `rankingHistory` collection (or a new collection like `organicRankingHistory`) to get the organic keyword rankings for the campaign’s website.
+    - Filter the historical data based on the `dateRange` parameter (or `startDate` and `endDate` for custom ranges).
+    - For each keyword:
+      - Fetch the current rank, previous rank, and historical ranks using DataForSEO or Google Search API (based on admin preference, similar to the GBP Map Rankings setup).
+      - Calculate the rank change by comparing the current rank to the previous rank.
+      - Determine the best rank by finding the lowest rank in the historical data.
+      - Fetch search volume, CPC, and competition from DataForSEO.
+      - Include any tags associated with the keyword (if a tagging system exists, or allow for future implementation).
+    - Calculate summary metrics:
+      - Count the total keywords, keywords up/down/no change, and keywords in top 3/10/100 positions.
+      - Estimate the project value by multiplying the search volume by the CPC for each keyword and summing the results.
+    - Sort the keyword rankings based on the `sortBy` and `sortOrder` parameters.
+    - Return the campaign details, keyword rankings, and summary metrics in the response.
+
+### Frontend Requirements
+- **Step 1: Create the Local Organic Rankings Tab**:
+  - **Location**: Add a new tab labeled "Local Organic Rankings" under the "Local Rankings" menu, alongside the existing "GBP Map Rankings" tab.
+  - **Tab Bar Styling**:
+    - Style the tab bar for switching between "GBP Map Rankings" and "Local Organic Rankings":
+      - Unselected tab: Black background (#000000) with white text (#FFFFFF, 16px Montserrat).
+      - Selected tab: Orange background (#F28C38) with white text (#FFFFFF, 16px Montserrat).
+  - **Layout**:
+    - **Header Section**:
+      - Display the campaign’s website URL (e.g., "doctortoyou.com.au") as a heading (black text, #000000, 20px bold Montserrat).
+      - Show the target location and language (e.g., "Location: Australia, Language: English") below the website URL (black text, #000000, 16px Montserrat).
+      - Add a "Check Frequency" label (e.g., "Check Frequency: Daily at 13:56") (black text, #000000, 14px Montserrat).
+    - **Summary Metrics Section**:
+      - Display a row of cards showing the summary metrics, similar to the SERPWATCH dashboard:
+        - Total Keywords (e.g., "58").
+        - Keywords Up (e.g., "9 ↑").
+        - Keywords No Change (e.g., "39 →").
+        - Keywords Down (e.g., "10 ↓").
+        - Keywords in Top 3 (e.g., "0").
+        - Keywords in Top 10 (e.g., "0").
+        - Keywords in Top 100 (e.g., "44").
+        - Project Monthly Value (e.g., "$0.6").
+      - Style each card with a white background, a subtle border, and centered text.
+      - Use black text (#000000, 16px Montserrat) for the metric values and labels.
+      - Add icons or arrows for "Keywords Up" (green upward arrow, #28A745), "Keywords No Change" (gray right arrow, #CCCCCC), and "Keywords Down" (red downward arrow, #E63946).
+    - **Keyword Rankings Table**:
+      - Display a table listing all tracked keywords, with the following columns:
+        - Checkbox: For selecting keywords (e.g., to tag or perform bulk actions).
+        - Keyword: The keyword (e.g., "24 hour chemist near me open now").
+        - Tags: Tags associated with the keyword (e.g., "urgent, health"), displayed as small blue tags.
+        - Search Index: The current rank (e.g., "100+").
+        - Initial Rank: The rank when tracking started (e.g., "100+").
+        - Change: The rank change since the last scan (e.g., "→" for no change, "↑5" for improved, "↓3" for declined).
+        - Last Rank: The rank from the last scan (e.g., "100+").
+        - Best Rank: The best rank ever achieved (e.g., "94").
+        - Search Volume: Monthly search volume (e.g., "5400").
+        - CPC: Cost-per-click (e.g., "$6.03").
+        - Competition: Competition level (e.g., "0.02").
+        - Last Updated: Date and time of the last check (e.g., "24/03/2025 13:56").
+        - Actions: Buttons for actions like viewing the SERP, adding tags, or viewing trends (e.g., icons for Google search, tag addition, and trend graph).
+      - Style the table with a white background, subtle borders, and hover effects on rows (light gray background on hover, #F5F5F5).
+      - Ensure all text in the table (headers, cells, tags) is black (#000000, 16px Montserrat for body, 18px bold Montserrat for headers).
+      - Color-code the "Change" column:
+        - Green (#28A745) for upward arrows (improved ranks).
+        - Red (#E63946) for downward arrows (declined ranks).
+        - Gray (#CCCCCC) for right arrows (no change).
+    - **Filters and Sorting**:
+      - Add a filter bar above the table with the following options:
+        - Date Range Selector: Options for "Last 7 Days", "Last 30 Days", "Last 90 Days", and "Custom Range" (with a date picker).
+        - Sort By: Dropdown to sort by "Keyword", "Current Rank", "Change", "Search Volume", "CPC", or "Competition".
+        - Sort Order: Toggle between "Ascending" and "Descending".
+      - Style the filter bar with a white background and black text (#000000, 16px Montserrat for labels and options).
+      - Add a "Clear Filters" button (orange background, #F28C38, with white text, #FFFFFF, 16px Montserrat).
+    - **Trend Pop-Up**:
+      - Add a "Trend" action button in the table’s "Actions" column for each keyword.
+      - When clicked, open a pop-up showing a line graph of the keyword’s rank history over the selected date range.
+      - Use #F28C38 for the line graph.
+      - Style the pop-up with a white background, a border, and a close button (orange background, #F28C38, with white text, #FFFFFF, 16px Montserrat).
+      - Ensure all text in the pop-up (headings, labels, graph text) is black (#000000, 16px Montserrat for body, 18px bold for headings).
+  - **Design**:
+    - Use the app’s existing color scheme:
+      - Primary color: #F28C38 for buttons and highlights.
+      - Positive: #28A745 (Green).
+      - Negative: #E63946 (Red).
+      - Neutral: #CCCCCC (Gray).
+    - Ensure all text (headings, subheadings, labels, tooltips, table content, etc.) is black (#000000):
+      - Headings: 20px bold Montserrat.
+      - Subheadings: 18px bold Montserrat.
+      - Body text: 16px Montserrat.
+      - Small text (e.g., in tooltips, labels): 14px Montserrat.
+    - Add subtle animations using Framer Motion:
+      - Fade-in animation for the entire tab when it loads.
+      - Scale animation on hover for table rows, filter buttons, and action icons.
+
+### Testing
+- **Test Case 1: Data Display**:
+  - Select a campaign with tracked keywords and verify that the "Local Organic Rankings" tab displays:
+    - The campaign’s website URL, location, language, and check frequency in the header.
+    - Summary metrics cards with total keywords, keywords up/down/no change, top 3/10/100, and project value.
+    - A table listing all keywords with their rankings, changes, search volume, CPC, competition, and last updated date.
+- **Test Case 2: Visual Elements**:
+  - Ensure all text in the header, summary cards, table, filters, and pop-ups is black (#000000).
+  - Verify that the tab bar has a black background with white text when unselected, and an orange background with white text when selected.
+  - Check that the "Change" column uses the correct colors for arrows (green for up, red for down, gray for no change).
+  - Confirm that the trend pop-up displays a line graph with black text for all labels and headings.
+- **Test Case 3: Interactivity**:
+  - Test the date range selector and verify that the table and trend pop-up update to show data for the selected range.
+  - Test the sort by and sort order options and confirm that the table updates accordingly.
+  - Click the "Trend" action button for a keyword and verify that the pop-up opens with a line graph showing the rank history, with all text in black.
+  - Test the "Clear Filters" button and ensure it resets all filters.
+- **Test Case 4: Error Handling**:
+  - Test with a campaign that has no tracked keywords and verify that the tab displays a message like "No keywords tracked for this campaign" (in black text, #000000, 16px Montserrat).
+  - Test with a failed DataForSEO API call for search volume/CPC/competition and ensure the table displays "N/A" for those fields (in black text, #000000, 16px Montserrat).

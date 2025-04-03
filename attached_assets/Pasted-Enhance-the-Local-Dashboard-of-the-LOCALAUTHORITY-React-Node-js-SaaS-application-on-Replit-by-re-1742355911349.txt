@@ -1,0 +1,82 @@
+Enhance the Local Dashboard of the "LOCALAUTHORITY" React + Node.js SaaS application on Replit by reorganizing the layout, adding prominent action cards, displaying all connected GBP locations with an expanded selected view and minimalist other views, introducing key metrics widgets, and adding quick filters and status indicators, using a consistent color scheme of white (#FFFFFF) background, black (#1C2526) top bar, and orange (#F28C38) accents:
+
+- Backend (Node.js):
+  - Update `/api/client/local-dashboard`:
+    - Fetch all connected GBP locations (from `/api/auth/google-connect` or SQLite `locations` table).
+    - Include location data: Location Name, Address, Phone, Website, Overall Ranking (average GBP Map Ranking position from `/api/client/local-ranking/gbp-map-rankings`), Ranking Trend (compare to previous period, e.g., last 7 days), and Status (Active/Pending/Suspended from Google Business Profile API).
+    - Include key metrics (filterable by timeframe: Last 7 Days, Last 30 Days):
+      - Reviews: Total count, average rating (from `/api/client/reputation-management`).
+      - Posts: Total count, average views, last post date (from `/api/client/content-management`).
+      - Rankings: Average GBP Map Ranking position (from `/api/client/local-ranking/gbp-map-rankings`).
+      - Citations: Total citations, missing high-priority (from `/api/client/local-links`).
+    - Return: JSON with locations, selected `gbp_id`, metrics data, and quick stats for the selected location (Total Reviews, Average Rating, Last Post Date).
+  - Credit System: 0 credits for dashboard data fetch (free action).
+
+- Frontend (React):
+  - Update `/local-dashboard`:
+    - **Top Bar**:
+      - Keep black (#1C2526) background with orange (#F28C38) for active selections.
+    - **Greeting**:
+      - Add "Good [Time of Day], [User]!" above the action cards (e.g., "Good Morning, Ravinder!").
+      - Use #1C2526, Montserrat 24px bold.
+    - **Top Section: Action Cards**:
+      - Add a row of 5 rectangular cards for key actions:
+        - "Run Audit" (links to `/gbp-audit`)
+        - "Manage Posts" (links to `/content-management/create-gbp-post`)
+        - "View Reviews" (links to `/reputation-management/review-management`)
+        - "Local Rankings" (links to `/local-ranking/local-organic-rankings`)
+        - "GBP Map Rankings" (links to `/local-ranking/gbp-map-rankings`)
+      - Design:
+        - Background: #FFFFFF.
+        - Use shades of orange: `#F28C38`, `#F5A461`, `#F7B374`, `#F9C287`, `#FBD19A` for text and borders.
+        - Size: 200px wide, 100px tall.
+        - Include icons (e.g., magnifying glass for "Run Audit", pencil for "Manage Posts") in #F28C38.
+        - Text: #F28C38, Montserrat 16px bold.
+        - Hover: Scale up (Framer Motion), border #F28C38.
+      - Remove "Run Audit", "Manage Posts", "View Reviews" buttons from the GBP profile component.
+    - **Locations Section**:
+      - If no locations are connected:
+        - Display a "Connect Your Google Account" button (#F28C38 with #FFFFFF text, hover #F5A461) triggering `/api/auth/google-connect`.
+      - Otherwise:
+        - **Sort Option**: Add a "Sort by" dropdown above the locations (e.g., "Sort by Name", "Sort by Ranking"), #FFFFFF background, #1C2526 text.
+        - Display all connected GBP locations in a 2-column grid (desktop), 1-column for mobile (<768px).
+        - **Selected Location (Expanded View)**:
+          - Show: Location Name, Address, Phone, Website, Overall Ranking (e.g., "Position 3"), Ranking Trend (green #28A745 arrow up for improvement, red #E63946 arrow down for decline), Status (e.g., "Active" in #F28C38 badge), and "View on Maps" link.
+          - Border: #F28C38, 2px solid.
+          - Add "Selected" label in #F28C38 at 45-degree angle in top-right corner (CSS transform: rotate(45deg)).
+          - Quick Stats Below: Total Reviews, Average Rating, Last Post Date (#1C2526 text).
+        - **Other Locations (Minimalist View)**:
+          - Show: Location Name, Address, "Select" button (#F28C38 with #FFFFFF text, hover #F5A461), and "View on Maps" link (#1C2526 text).
+          - Border: #1C2526, 1px solid.
+        - Background: #FFFFFF for all cards.
+    - **Key Metrics Widgets**:
+      - Add a timeframe filter above the widgets: "Last 7 Days", "Last 30 Days" (dropdown, #FFFFFF background, #1C2526 text).
+      - Add a row of 4 cards below the locations section:
+        - Review Summary: Total reviews, average rating.
+        - Post Engagement: Total posts, average views.
+        - Ranking Trend: Average GBP Map Ranking position.
+        - Citation Health: Total citations, missing high-priority.
+      - Design:
+        - Background: #FFFFFF.
+        - Text: #1C2526, Montserrat 16px.
+        - Icon: #F28C38.
+        - Border: #1C2526, 1px solid.
+    - **Optimization Progress**: Retain as-is, below the key metrics (white background, #F28C38 accents).
+    - **Recent Activity**: Retain as-is, below Optimization Progress (white background, #F28C38 links).
+  - **Design**:
+    - Background: #FFFFFF for all components, sub-components, and form fields.
+    - Text: #1C2526 (primary).
+    - Buttons: #F28C38 with #FFFFFF text, hover #F5A461.
+    - Framer Motion: Fade-in for cards, scale on hover for action cards.
+    - Montserrat font: 24px bold headings, 16px body.
+
+- Interdependencies:
+  - Ensure all sections update dynamically when a new GBP location is selected.
+  - Pull data from Reputation Management, Content Management, Local Ranking, and Local Links for metrics and quick stats.
+
+- Testing:
+  - Verify action cards link to correct screens.
+  - Test location selection, expanded/minimalist views, and highlighting.
+  - Confirm key metrics update with timeframe filter.
+  - Ensure responsiveness (2-column grid on desktop, 1-column on mobile).
+  - Check UI consistency with "LOCALAUTHORITY" design (white background, black top bar, orange accents).

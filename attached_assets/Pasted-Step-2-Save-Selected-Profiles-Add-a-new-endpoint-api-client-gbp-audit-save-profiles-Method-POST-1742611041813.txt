@@ -1,0 +1,40 @@
+Step 2: Save Selected Profiles:
+Add a new endpoint /api/client/gbp-audit/save-profiles:
+Method: POST
+Purpose: Save the user’s selected GBP profiles.
+Request Body:
+selectedProfiles: Array of profile names (e.g., ["locations/123", "locations/456"]).
+Logic:
+Retrieve the user’s GBP profiles from the database.
+Filter the profiles to include only the selected ones:
+javascript
+
+Collapse
+
+Wrap
+
+Copy
+const userId = req.session.user.id;
+const allProfiles = await db.collection('gbpProfiles').findOne({ userId });
+const selected = allProfiles.locations.filter(loc => selectedProfiles.includes(loc.name));
+await db.collection('gbpProfiles').updateOne(
+  { userId },
+  { $set: { selectedProfiles: selected, lastUpdated: new Date() } }
+);
+res.json({ success: true });
+Testing
+Test Case 1: OAuth Flow:
+Navigate to /local-dashboard.
+Click the "Add new location" button and ensure you’re redirected to Google’s OAuth consent screen.
+Sign in with a Google account, grant permissions, and verify you’re redirected back to /local-dashboard with the modal open.
+Test Case 2: GBP Profile Import:
+After OAuth redirect, verify that the modal opens and GBP profiles are fetched and displayed.
+Select a few profiles, click "Save Selected Profiles", and ensure the modal closes and the dashboard updates to show the new profiles.
+Test Case 3: GBP Data Retrieval:
+Go to /client/gbp-audit/business and verify that business info is fetched for one of the selected profiles.
+Go to /client/gbp-audit/reviews and verify that reviews are fetched.
+Go to /client/gbp-audit/map-rankings and verify that geo-grid rankings work (using the toggle between DataForSEO and Google Places API).
+Error Handling Tests:
+Test with invalid credentials: Remove the Client ID from the stored credentials and verify the error message: "Google OAuth credentials not configured".
+Test with an expired token: Manually expire the access token and verify that the refresh token is used to obtain a new one.
+Test with a user who doesn’t have GBP profiles: Ensure an appropriate message is displayed in the modal ("No GBP profiles found").

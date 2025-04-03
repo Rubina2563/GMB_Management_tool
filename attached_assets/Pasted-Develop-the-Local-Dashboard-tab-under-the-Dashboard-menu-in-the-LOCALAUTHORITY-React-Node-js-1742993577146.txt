@@ -1,0 +1,55 @@
+Develop the "Local Dashboard" tab under the "Dashboard" menu in the "LOCALAUTHORITY" React + Node.js SaaS application on Replit. Enhance the "GBP Insights" section with detailed, visually appealing metrics. Ensure the design aligns with the existing client panel, with all text in black (#000000) for visibility against the white background.
+
+Objective
+Purpose: Improve the "GBP Insights" section to:
+Show views and actions over time with line graphs.
+Display engagement metrics (clicks to website, direction requests, phone calls).
+Include comparisons to the previous period.
+Field Testing Goal: Deliver actionable GBP performance insights with an engaging, glanceable design.
+Backend Requirements
+Step 1: Modify the Existing Endpoint for Dashboard Data:
+Endpoint: Enhance the existing dashboard data endpoint (e.g., /api/client/dashboard).
+Purpose: Include detailed GBP insights.
+Response Data:
+viewsOverTime: Array of { date, views } (e.g., [{ date: "2023-01-01", views: 100 }, ...]).
+actionsOverTime: Array of { date, actions } (e.g., [{ date: "2023-01-01", actions: 50 }, ...]).
+engagementMetrics: Object with:
+clicksToWebsite: Number (e.g., 50).
+directionRequests: Number (e.g., 30).
+phoneCalls: Number (e.g., 20).
+comparison: Object with:
+viewsChange: Percentage (e.g., 15).
+actionsChange: Percentage (e.g., -5).
+Example: { viewsOverTime: [...], actionsOverTime: [...], engagementMetrics: { clicksToWebsite: 50, ... }, comparison: { viewsChange: 15, ... } }.
+Logic:
+Fetch data from Google Business Profile API or database.
+Calculate percentage changes based on the selected timeframe.
+Frontend Requirements
+Step 1: Enhance the "GBP Insights" Section:
+Location: Update the "GBP Insights" section in the "Local Dashboard" tab.
+New Elements:
+Views Over Time: Line graph.
+Actions Over Time: Line graph.
+Engagement Metrics: Cards for clicks, directions, calls.
+Comparison Indicators: Percentage changes (e.g., "+15% Views").
+Styling:
+Graphs with orange lines (#F28C38), black text (#000000).
+Cards with white backgrounds, orange accents (#F28C38), black text (#000000, 16px Montserrat).
+Comparison: Green (#28A745) for positive, red (#E63946) for negative.
+Interactivity:
+Timeframe selector (e.g., 7 days, 30 days) updates graphs.
+"View Detailed Insights" link navigates to a detailed page.
+Design:
+All text in black (#000000).
+Graph loading animations with Framer Motion.
+Testing
+Test Case 1: Data Display:
+Verify graphs show correct views and actions.
+Check engagement cards display accurate numbers.
+Confirm comparison indicators match backend data.
+Test Case 2: Interactivity:
+Change timeframe and ensure graphs update.
+Click "View Detailed Insights" and verify navigation.
+Test Case 3: Visual Elements:
+Ensure all text is black (#000000).
+Verify styling consistency with the app.

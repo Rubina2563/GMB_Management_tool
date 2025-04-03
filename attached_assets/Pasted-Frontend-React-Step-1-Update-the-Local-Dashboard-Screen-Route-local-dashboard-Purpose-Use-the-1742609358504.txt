@@ -1,0 +1,73 @@
+Frontend (React)
+Step 1: Update the Local Dashboard Screen:
+Route: /local-dashboard
+Purpose: Use the existing "Add new location" button to initiate the Google OAuth flow and display a modal for selecting GBP profiles after authentication.
+Components:
+Existing "Add new location" Button:
+Locate the "Add new location" button on the Local Dashboard screen (likely in the LocalDashboard.js or similar component).
+Update its onClick handler to initiate the OAuth flow:
+javascript
+
+Collapse
+
+Wrap
+
+Copy
+const handleAddNewLocation = () => {
+  window.location.href = '/api/auth/google/login';
+};
+Ensure the button’s styling matches the app’s design:
+Background: #F28C38.
+Text: #FFFFFF.
+Hover: #F5A461.
+Montserrat font: 16px.
+Modal for GBP Profile Selection:
+Add a state to manage the modal visibility and GBP profiles:
+javascript
+
+Collapse
+
+Wrap
+
+Copy
+const [isModalOpen, setIsModalOpen] = useState(false);
+const [profiles, setProfiles] = useState([]);
+const [selectedProfiles, setSelectedProfiles] = useState([]);
+const [error, setError] = useState(null);
+Use the useEffect hook to check for the importGbp query parameter and fetch GBP profiles:
+javascript
+
+Collapse
+
+Wrap
+
+Copy
+import { useLocation, useNavigate } from 'react-router-dom';
+
+const location = useLocation();
+const navigate = useNavigate();
+
+useEffect(() => {
+  const params = new URLSearchParams(location.search);
+  if (params.get('importGbp') === 'true') {
+    setIsModalOpen(true);
+    const fetchProfiles = async () => {
+      try {
+        const response = await fetch('/api/auth/google/import-gbp-profiles', {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        });
+        const data = await response.json();
+        if (data.success) {
+          setProfiles(data.locations);
+        } else {
+          setError(data.error);
+        }
+      } catch (err) {
+        setError('Failed to fetch GBP profiles');
+      }
+    };
+    fetchProfiles();
+    // Clear the query parameter
+    navigate('/local-dashboard', { replace: true });
+  }
+}, [location, navigate]);

@@ -1,0 +1,58 @@
+Prompt 2: Replace Optimization Progress with Onboarding and Exploration Features
+Develop the "Local Dashboard" tab under the "Dashboard" menu in the "LOCALAUTHORITY" React + Node.js SaaS application on Replit. Remove the "Optimization Progress" sections and introduce onboarding and exploration features for new users. Ensure the design aligns with the existing client panel, with all text in black (#000000) for visibility against the white background.
+
+Objective
+Purpose: Enhance the "Local Dashboard" tab by:
+Removing "Optimization Progress" sections.
+Adding an onboarding placeholder for new users.
+Including an "Explore the App" section for feature navigation.
+Field Testing Goal: Provide a welcoming, informative experience for new users, guiding them through onboarding and app exploration.
+Backend Requirements
+Step 1: Modify the Existing Endpoint for Dashboard Data:
+Endpoint: Enhance the existing dashboard data endpoint (e.g., /api/client/dashboard).
+Purpose: Add a flag to identify new users.
+Response Data:
+isNewUser: Boolean indicating if the user has incomplete onboarding (e.g., true).
+Example: { isNewUser: true }.
+Logic:
+Check onboarding steps (e.g., Google account connected, location added, campaign started).
+Set isNewUser to true if any step is incomplete.
+Frontend Requirements
+Step 1: Remove Optimization Progress Sections:
+Location: Eliminate both "Optimization Progress" instances from the "Local Dashboard" tab.
+Step 2: Add Onboarding Placeholder:
+Display: Show only if isNewUser is true.
+Elements:
+Welcome message: "Welcome to LOCALAUTHORITY! Let’s get started."
+Checklist:
+"Connect Google Account": Description and "Connect Now" button.
+"Add Your First Location": Description and "Add Location" button.
+"Start a Campaign": Description and "Create Campaign" button.
+Styling:
+Cards with white backgrounds, orange accents (#F28C38), black text (#000000, 16px Montserrat).
+Buttons with orange background (#F28C38), white text (#FFFFFF, 16px Montserrat).
+Step 3: Add "Explore the App" Section:
+Display: Always visible.
+Elements:
+Feature links:
+"View GBP Audit"
+"Check Local Rankings"
+"Manage Reviews"
+Styled as a grid of cards.
+Styling:
+Cards with white backgrounds, orange accents (#F28C38), black text (#000000, 16px Montserrat).
+Interactivity:
+Links navigate to respective feature pages.
+Design:
+All text in black (#000000).
+Hover effects on cards using Framer Motion.
+Testing
+Test Case 1: Onboarding Placeholder:
+For a new user, verify the placeholder displays with message and checklist.
+For a completed user, ensure it’s hidden.
+Test Case 2: "Explore the App" Section:
+Confirm the section is always visible.
+Check each link navigates correctly.
+Test Case 3: Visual Elements:
+Ensure all text is black (#000000).
+Verify cards match the app’s design.

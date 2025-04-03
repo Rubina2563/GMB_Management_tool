@@ -1,0 +1,130 @@
+Proposed Code Changes
+Based on the provided code and the suggested fix approach, here’s a refined implementation:
+
+tsx
+
+Collapse
+
+Wrap
+
+Copy
+// Replace the form with a div-based input group
+<div className="flex w-full items-center space-x-2">
+  <div className="relative flex-1">
+    <Input
+      type="text"
+      placeholder="Enter a keyword..."
+      value={keywordInput}
+      onChange={(e) => setKeywordInput(e.target.value)}
+      className="w-full border-[#F28C38]/20 focus:border-[#F28C38] bg-[#1C2526] text-white"
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          addKeyword();
+        }
+      }}
+    />
+  </div>
+  <Button
+    type="button"
+    onClick={addKeyword}
+    className="bg-[#F28C38] hover:bg-[#F5A461] text-white"
+  >
+    Add Keyword
+  </Button>
+</div>
+
+// Refactor addKeyword function
+const addKeyword = () => {
+  const keyword = keywordInput.trim();
+  if (!keyword) return;
+
+  const newKeyword = {
+    keyword,
+    is_primary: currentKeywordTag === 'primary',
+    tag: currentKeywordTag,
+  };
+
+  // Use a single state update to avoid race conditions
+  setCampaignData((prevData) => {
+    const updatedKeywords = [...(prevData.keywords || []), newKeyword];
+    setCampaignKeywords(updatedKeywords); // Sync with local state
+    setKeywordInput(''); // Clear input after update
+    toast({
+      title: "Keyword Added",
+      description: `"${keyword}" has been added to your campaign.`,
+      variant: "default",
+    });
+    return {
+      ...prevData,
+      keywords: updatedKeywords,
+    };
+  });
+};
+
+// Ensure removeKeyword is consistent
+const removeKeyword = (index: number) => {
+  setCampaignData((prevData) => {
+    const updatedKeywords = (prevData.keywords || []).filter((_, i) => i !== index);
+    setCampaignKeywords(updatedKeywords);
+    toast({
+      title: "Keyword Removed",
+      description: "Keyword has been removed from your campaign.",
+      variant: "default",
+    });
+    return {
+      ...prevData,
+      keywords: updatedKeywords,
+    };
+  });
+};
+
+// Update wizard navigation to prevent unintended resets
+const goToNextStep = () => {
+  setTimeout(() => {
+    const nextStep = getNextStep(currentStep);
+    if (nextStep && currentStep === 3) { // Step 3 is keyword addition
+      setIsKeywordStepComplete(true); // Add a flag to track completion
+    }
+    setCurrentStep(nextStep);
+  }, 300); // Increased timeout for stability
+};
+
+const goToPreviousStep = () => {
+  setTimeout(() => {
+    const prevStep = getPreviousStep(currentStep);
+    setCurrentStep(prevStep);
+  }, 300);
+};
+
+// Add state to track keyword step completion
+const [isKeywordStepComplete, setIsKeywordStepComplete] = useState(false);
+
+// In the wizard component, guard the step transition
+const renderStep = () => {
+  switch (currentStep) {
+    case 1:
+      return <SelectCampaignStep onNext={goToNextStep} />;
+    case 2:
+      return <SetMetricsStep onNext={goToNextStep} onPrev={goToPreviousStep} />;
+    case 3:
+      return (
+        <AddKeywordsStep
+          keywords={campaignKeywords}
+          addKeyword={addKeyword}
+          removeKeyword={removeKeyword}
+          onNext={() => isKeywordStepComplete && goToNextStep()}
+          onPrev={goToPreviousStep}
+        />
+      );
+    // ... other steps
+    default:
+      return null;
+  }
+};
+Key Changes
+Remove Form: Replaced <form> with <div> and made "Add Keyword" a standalone button to eliminate form submission resets.
+Synchronized State: Used a single setCampaignData update with a callback to sync campaignKeywords and clear keywordInput atomically.
+Wizard Guard: Added isKeywordStepComplete to ensure the "Next Step" button is only enabled after keywords are added, preventing unintended resets.
+Timeout Increase: Extended setTimeout to 300ms for better synchronization with state updates.
+Design Update: Adjusted classes to use the new color palette (#1C2526, #F28C38, #F5A461, #FFFFFF).

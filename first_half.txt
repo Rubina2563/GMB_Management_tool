@@ -1,0 +1,400 @@
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '@/lib/auth';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { queryClient } from '@/lib/queryClient';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Link } from 'wouter';
+import { 
+  ArrowRight, Search, BarChart3, Key, ExternalLink, 
+  Loader2, MapPin, Phone, Globe, Clock, Star, 
+  Building, RefreshCcw, ChevronRight, ChevronDown,
+  Rocket, CheckCircle2, AlertCircle, Activity
+} from 'lucide-react';
+import { 
+  BuildingStorefrontIcon, 
+  ChartBarIcon, 
+  CheckIcon, 
+  GlobeAltIcon, 
+  MapPinIcon 
+} from '@heroicons/react/24/outline';
+import { motion, AnimatePresence } from 'framer-motion';
+import axios from 'axios';
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+// Define dashboard tabs
+type DashboardTab = 'overview' | 'gbp-info' | 'quick-actions';
+
+export default function ClientDashboard() {
+  const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState<DashboardTab>('overview');
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [selectedLocationId, setSelectedLocationId] = useState<number | null>(null);
+  
+  // Animation variants for staggered card reveal
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.2
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: {
+        duration: 0.5
+      }
+    }
+  };
+  
+  // Query for API keys to check if user has set them up
+  const { data: apiKeysData, isLoading: isLoadingApiKeys } = useQuery({
+    queryKey: ['/api/api-keys'],
+    queryFn: async () => {
+      try {
+        const response = await axios.get('/api/api-keys');
+        return response.data;
+      } catch (error) {
+        console.error('Error fetching API keys:', error);
+        return { api_keys: null };
+      }
+    }
+  });
+  
+  // Query for GBP locations
+  const { 
+    data: gbpLocations,
+    isLoading: isLoadingLocations,
+    isError: isErrorLocations
+  } = useQuery({
+    queryKey: ['/api/gbp/locations'],
+    queryFn: async () => {
+      try {
+        const response = await axios.get('/api/gbp/locations');
+        return response.data;
+      } catch (error) {
+        console.error('Error fetching GBP locations:', error);
+        return { locations: [] };
+      }
+    },
+    retry: 1
+  });
+
+  // Mutation for connecting GBP
+  const connectGBPMutation = useMutation({
+    mutationFn: async (locationId: string) => {
+      setIsConnecting(true);
+      const response = await axios.post('/api/gbp/connect', { location_id: locationId });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/gbp/locations'] });
+      setIsConnecting(false);
+    },
+    onError: (error) => {
+      console.error('Error connecting GBP:', error);
+      setIsConnecting(false);
+    }
+  });
+  
+  const hasSetupApiKeys = apiKeysData?.api_keys && (
+    apiKeysData.api_keys.google_api_key ||
+    apiKeysData.api_keys.data_for_seo_key ||
+    apiKeysData.api_keys.serp_api_key
+  );
+
+  const hasGBPLocations = gbpLocations?.locations && gbpLocations.locations.length > 0;
+
+  // Query for optimization progress data
+  const {
+    data: optimizationProgress,
+    isLoading: isLoadingOptimization,
+    isError: isErrorOptimization
+  } = useQuery({
+    queryKey: ['/api/gbp/optimization-progress', selectedLocationId],
+    queryFn: async () => {
+      try {
+        // Only fetch if we have a selected location
+        if (!selectedLocationId) {
+          return { progress: null };
+        }
+        const response = await axios.get(`/api/gbp/optimization-progress/${selectedLocationId}`);
+        return response.data;
+      } catch (error) {
+        console.error('Error fetching optimization progress:', error);
+        return { progress: null };
+      }
+    },
+    enabled: !!selectedLocationId, // Only run query if we have a locationId
+    retry: 1
+  });
+
+  // Set default location when locations are loaded
+  useEffect(() => {
+    if (hasGBPLocations && !selectedLocationId && gbpLocations?.locations.length > 0) {
+      setSelectedLocationId(gbpLocations.locations[0].id);
+    }
+  }, [gbpLocations, hasGBPLocations, selectedLocationId]);
+
+  // Handle location change
+  const handleLocationChange = (locationId: string) => {
+    setSelectedLocationId(locationId === "all" ? null : parseInt(locationId));
+  };
+
+  // Handle connect GBP
+  const handleConnectGBP = () => {
+    // In a real implementation, you would show a modal to enter the location ID
+    // For this implementation, we'll use a demo location ID
+    connectGBPMutation.mutate("demo-location-123");
+  };
+
+  return (
+    <div className="container mx-auto">
+      {/* Dashboard Tabs */}
+      <div className="mb-6 bg-[#1C2526] rounded-lg p-1 flex space-x-1 shadow-sm">
+        {[
+          { id: 'overview', label: 'Overview' },
+          { id: 'gbp-info', label: 'GBP Info' },
+          { id: 'quick-actions', label: 'Quick Actions' }
+        ].map((tab) => (
+          <motion.button
+            key={tab.id}
+            className={`relative px-4 py-2 rounded-md font-['Montserrat'] text-white font-medium ${
+              activeTab === tab.id ? 'bg-[#F28C38] shadow-sm' : 'hover:bg-white/10'
+            }`}
+            onClick={() => setActiveTab(tab.id as DashboardTab)}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            {tab.label}
+            {activeTab === tab.id && (
+              <motion.div
+                className="absolute bottom-0 left-0 right-0 h-0.5 bg-white mx-4"
+                layoutId="dashboard-tab-indicator"
+              />
+            )}
+          </motion.button>
+        ))}
+      </div>
+      
+      <AnimatePresence mode="wait">
+        {activeTab === 'overview' && (
+          <motion.div
+            key="overview"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold text-black font-['Montserrat']">
+                Welcome to Your Dashboard
+              </h1>
+              <p className="text-gray-600 mt-2">
+                Hello, {user?.username}! Here's an overview of your account and available features.
+              </p>
+            </div>
+            
+            <motion.div 
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8"
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+            >
+              <motion.div variants={itemVariants}>
+                <Card className="bg-white text-black h-full shadow-sm hover:shadow-md transition-shadow duration-300">
+                  <CardHeader>
+                    <Search className="h-8 w-8 mb-2 text-[#F28C38]" />
+                    <CardTitle className="font-['Montserrat'] text-xl">GBP Audit</CardTitle>
+                    <CardDescription className="text-gray-600">
+                      Analyze your Google Business Profile
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="mb-4">
+                      Get comprehensive analysis and actionable recommendations to improve your GBP performance.
+                    </p>
+                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                      <Link href="/client/gbp-audit">
+                        <Button className="bg-[#F28C38] hover:bg-[#F28C38]/80 text-white mt-2">
+                          Run Audit
+                        </Button>
+                      </Link>
+                    </motion.div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+              
+              <motion.div variants={itemVariants}>
+                <Card className="bg-white text-black h-full shadow-sm hover:shadow-md transition-shadow duration-300">
+                  <CardHeader>
+                    <BarChart3 className="h-8 w-8 mb-2 text-[#F28C38]" />
+                    <CardTitle className="font-['Montserrat'] text-xl">Posts Management</CardTitle>
+                    <CardDescription className="text-gray-600">
+                      Create and schedule GBP posts
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="mb-4">
+                      Create engaging posts for your Google Business Profile to boost visibility and customer engagement.
+                    </p>
+                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                      <Link href="/client/posts">
+                        <Button className="bg-[#F28C38] hover:bg-[#F28C38]/80 text-white mt-2">
+                          Manage Posts
+                        </Button>
+                      </Link>
+                    </motion.div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+              
+              <motion.div variants={itemVariants}>
+                <Card className="bg-white text-black h-full shadow-sm hover:shadow-md transition-shadow duration-300">
+                  <CardHeader>
+                    <BuildingStorefrontIcon className="h-8 w-8 mb-2 text-[#F28C38]" />
+                    <CardTitle className="font-['Montserrat'] text-xl">Google Business Profile</CardTitle>
+                    <CardDescription className="text-gray-600">
+                      Connect and manage your GBP
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="mb-4">
+                      Integrate with Google Business Profile to manage your business information and reviews.
+                    </p>
+                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                      <Button
+                        className="bg-[#F28C38] hover:bg-[#F28C38]/80 text-white mt-2"
+                        onClick={() => setActiveTab('gbp-info')}
+                      >
+                        Connect GBP
+                      </Button>
+                    </motion.div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </motion.div>
+            
+            <motion.div
+              variants={itemVariants}
+              initial="hidden"
+              animate="visible"
+            >
+              <Card className="mb-8 shadow-sm bg-white">
+                <CardHeader>
+                  <CardTitle className="text-xl font-bold text-black font-['Montserrat']">Getting Started</CardTitle>
+                  <CardDescription className="text-gray-600">Quick tips to get the most out of our platform</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex items-start">
+                      <div className="flex-shrink-0 bg-[#F28C38]/10 rounded-full p-2">
+                        <span className="text-[#F28C38] font-bold">1</span>
+                      </div>
+                      <div className="ml-4">
+                        <h3 className="text-lg font-semibold text-[#F28C38] font-['Montserrat']">Configure Your API Keys</h3>
+                        <p className="text-gray-600">
+                          Set up your API keys to enable all features. Visit the API Keys page to get started.
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-start">
+                      <div className="flex-shrink-0 bg-[#F28C38]/10 rounded-full p-2">
+                        <span className="text-[#F28C38] font-bold">2</span>
+                      </div>
+                      <div className="ml-4">
+                        <h3 className="text-lg font-semibold text-[#F28C38] font-['Montserrat']">Connect Your GBP</h3>
+                        <p className="text-gray-600">
+                          Link your Google Business Profile to get insights and manage your business presence.
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-start">
+                      <div className="flex-shrink-0 bg-[#F28C38]/10 rounded-full p-2">
+                        <span className="text-[#F28C38] font-bold">3</span>
+                      </div>
+                      <div className="ml-4">
+                        <h3 className="text-lg font-semibold text-[#F28C38] font-['Montserrat']">Run Your First GBP Audit</h3>
+                        <p className="text-gray-600">
+                          Analyze your Google Business Profile to get actionable recommendations.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+            
+            <motion.div
+              variants={itemVariants}
+              initial="hidden"
+              animate="visible"
+              transition={{ delay: 0.6 }}
+            >
+              <div className="flex flex-col md:flex-row gap-4">
+                <Link href="/client/api-keys">
+                  <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
+                    <Button className="bg-[#F28C38] hover:bg-[#F28C38]/80 text-white w-full md:w-auto">
+                      Configure API Keys
+                      <Key className="ml-2 h-4 w-4" />
+                    </Button>
+                  </motion.div>
+                </Link>
+                
+                <Link href="/client/documentation">
+                  <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
+                    <Button variant="outline" className="border-[#F28C38] text-[#F28C38] w-full md:w-auto">
+                      View Documentation
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </motion.div>
+                </Link>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+        
+        {activeTab === 'gbp-info' && (
+          <motion.div
+            key="gbp-info"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.3 }}
+          >
+            <Card className="shadow-sm bg-white">
+              <CardHeader>
+                <div className="flex flex-col space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-2xl font-bold text-black flex items-center font-['Montserrat']">
+                        <BuildingStorefrontIcon className="h-6 w-6 mr-2 text-[#F28C38]" /> Google Business Profile
+                      </CardTitle>
+                      <CardDescription className="text-gray-600">
+                        Connect and manage your Google Business Profile
+                      </CardDescription>
+                    </div>
+                    {!isConnecting && !hasGBPLocations && (
+                      <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                        <Button 
+                          onClick={handleConnectGBP} 
+                          className="bg-[#F28C38] hover:bg-[#F28C38]/80 text-white"
+                        >
+                          Connect GBP
+                        </Button>
+                      </motion.div>
+                    )}

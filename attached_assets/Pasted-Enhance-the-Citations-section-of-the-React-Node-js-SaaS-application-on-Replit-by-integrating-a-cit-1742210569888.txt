@@ -1,0 +1,59 @@
+Enhance the Citations section of the React + Node.js SaaS application on Replit by integrating a citation and backlink audit using the DataForSEO Backlinks API, updating the design, and aligning with the existing citation list functionality:
+
+- Backend (Node.js):
+  - Update `/api/client/citations/audit`:
+    - Fetch backlinks for the GBP-linked website using DataForSEO Backlinks API (`/v3/backlinks/backlinks`).
+    - Input: GBP website URL (from GBP data).
+    - Body: `{ "target": "<GBP website URL>", "limit": 100 }`.
+    - Categorize:
+      - Citation Links: Referring domains matching directories (e.g., `yelp.com`, `facebook.com`, `google.com/business`) or anchor text matching business name.
+      - Authority Links: Dofollow links with `domain_rank` > 500 and keyword-rich anchor text (e.g., "plumber").
+    - Evaluate:
+      - Total citations: Recommend >20 for local prominence.
+      - Total authority links: Suggest >5 for better ranking.
+      - Missing directories: Compare to a predefined list (e.g., Yelp, BBB, Yellow Pages, Apple Maps, Merchant Circle, Angie’s List, HomeAdvisor) and identify gaps.
+    - Return: JSON with total citations, authority links, missing directories, and recommendations (e.g., "Add citations on Yelp, BBB").
+  - Update `/api/client/gbp/audit` to include citation audit summary (e.g., total citations, score) for overall GBP score.
+  - Store citation data in SQLite (`gbp_audits` table, `citation_info` JSON field, or `citations` table if separate).
+  - Credit System: 1 credit per citation audit (deduct from mock balance).
+
+- Frontend (React):
+  - Update `/client/citations`:
+    - Replace existing design:
+      - Background: `#FFFFFF`.
+      - Text: `#1C2526` (primary), `#D3D7D9` (secondary).
+      - Buttons: `#F28C38` with `#FFFFFF` text, hover `#F5A461` (e.g., "Citation List", "Gap Analysis", "Add Citation", "Update", "Add").
+      - Table Headers/Rows: `#1C2526` background, `#FFFFFF` text.
+    - Enhance "Citation List" tab:
+      - Columns:
+        - **Name**: Display `referring_page` URL (e.g., `https://www.google.com/business`).
+        - **Status**: Show "Active" (green `#28A745`), "Missing" (red `#E63946`), "Pending" (yellow `#FFC107`) based on `is_lost` and `last_seen`.
+        - **Priority**: Map `domain_rank` to "High" (>700), "Medium" (400-700), "Low" (<400) with orange `#F28C38` badges.
+        - **Category**: Assign "Local", "Social", "General", "Travel" using smart categorization (e.g., keyword match on domain).
+        - **DA/PA**: Display `domain_rank / 10` as DA, `page_rank / 10` as PA (e.g., "DA 98 / PA 98").
+        - **Actions**: 
+          - "Update" button (#F28C38) redirects to TLD (e.g., `https://www.yelp.com` for `https://www.yelp.com/biz/...`).
+          - "Add" button (#F28C38) for missing citations redirects to TLD for manual addition.
+      - Populate table with DataForSEO backlink data via `/api/client/citations/audit`.
+    - Enhance "Gap Analysis" tab:
+      - Display Total Available (200), Total Present (69), Missing (71) from DataForSEO data.
+      - Citation Score: Progress bar (35%, #F28C38 fill).
+      - Missing High Priority Citations: List with "Add" buttons (#F28C38).
+      - Competitor Analysis: Mock comparison with 3 competitors (e.g., Competitor A: 170 citations) using static data or DataForSEO SERP data.
+    - Add "Run Citation Audit" button (#F28C38) to trigger `/api/client/citations/audit`.
+    - Update overall GBP audit score (0-100): Assign 10% weight to citations (e.g., 2 metrics checked, 1 pass = 5/10).
+  - Notifications:
+    - Toast (bg-#F28C38, text-#FFFFFF) for audit start ("Citation audit in progress..."), completion ("Citation audit complete"), and errors ("Failed to fetch data").
+  - Design:
+    - Framer Motion: Fade-in for cards, scale on hover for buttons.
+    - Montserrat font: 24px bold headings, 16px body.
+
+- Interdependencies:
+  - Link citation data to GBP Audit for summary.
+  - Sync to Reports for PDF export.
+
+- Testing:
+  - Verify DataForSEO API integration (mock response if API key unavailable).
+  - Test citation/authority link categorization and table population.
+  - Confirm Update/Add buttons redirect to correct TLDs.
+  - Ensure credit deduction and UI consistency with new design.

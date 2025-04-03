@@ -1,0 +1,37 @@
+. Prompt for Overview Tab
+Objective:
+
+Provide a high-level overview of the GBP’s optimization status across multiple categories, using real data to calculate scores and generate recommendations.
+
+Backend Logic:
+
+Fetch Data:
+Use GBP API (locations.get, locations.reviews.list, locations.localPosts.list, locations.getGoogleUpdates) to fetch profile data, reviews, posts, and performance metrics.
+Use DataForSEO API (Google Business Profile Keywords, Google Business Profile Citations, Google Business Profile Competitors) for keyword, citation, and competitor data.
+Calculate Scores:
+Keyword Optimization: Analyze keyword presence in description, posts, and services (DataForSEO + NLP with spaCy).
+Review Response: Calculate response rate and average response time (GBP API).
+Posting Schedule: Check post frequency and timing (GBP API).
+Citation Prioritization: Identify citation opportunities (DataForSEO).
+Performance: Use current metrics (calls, website clicks, direction requests) to assess performance (GBP API).
+Competitor Benchmarking: Compare metrics like photo count and review response rate (DataForSEO + GBP API).
+Generate Recommendations:
+Use NLP (spaCy/OpenAI) to analyze data and suggest actions (e.g., "Your review response rate is low—respond to reviews within 24 hours").
+Include manual flows where needed (e.g., "Copy this keyword and add it to your GBP description: [link to GBP]").
+Frontend Design:
+
+Background: bg-white (#FFFFFF) for the main content area.
+Score: Display the overall score (e.g., 70/100) in text-orange-base (#F97316), 16px Montserrat font.
+Category Scores:
+Card: bg-white border border-gray-200 (#FFFFFF background, #E5E7EB border).
+Text: text-black (#000000) for category names, text-gray-500 for scores.
+Progress bars: Fill in bg-orange-base (#F97316), background in bg-gray-100.
+Key Recommendations:
+Card: bg-white border border-gray-200 (#FFFFFF background, #E5E7EB border).
+Text: text-black (#000000) for recommendation text, text-orange-base (#F97316) for highlighted keywords or actions.
+Buttons: Primary (bg-orange-base hover:bg-orange-light text-white) for actions like "Respond Now" or "Create Post".
+Testing:
+
+Verify that scores are calculated using real data (e.g., review response rate matches GBP data).
+Ensure recommendations are actionable and include manual flows where needed.
+Confirm styling aligns with the guide (e.g., white backgrounds, orange highlights).

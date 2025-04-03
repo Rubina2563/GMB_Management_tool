@@ -1,0 +1,30 @@
+Instruct the "LOCALAUTHORITY" React + Node.js SaaS application on Replit to use the Google Maps JavaScript API for the geo-grid map visualization, leveraging the shared Google API credentials set up in the admin panel.
+
+### Purpose of Google Maps JavaScript API
+- **Role**: Renders the geo-grid map visualization with markers for each grid point.
+- **Use Cases**:
+  - **GBP Map Rankings Page**: Displays a 5x5 geo-grid map centered on the GBP location, with color-coded markers (Green for ranks 1-3, Yellow for 4-10, Red for 11-20, Gray for >20 or no rank).
+- **Field Testing Goal**: Ensure the geo-grid map renders correctly with accurate marker placement and color coding, providing a clear visual representation of local rankings.
+
+### Backend (Node.js)
+- Ensure `/api/admin/google-api/api-key` (from Prompt 1) is available to provide the API key to the frontend.
+
+### Frontend (React)
+- Update `/client/gbp-audit/gbp-map-rankings`:
+  - Fetch the API key from `/api/admin/google-api/api-key` on page load.
+  - Use the API key with Leaflet.js to initialize the Google Maps JavaScript API and render the geo-grid map:
+    - Center the map on the GBP location (fetched from `/api/client/gbp-audit/map-rankings`).
+    - Add markers for each grid point using the `gridData` array.
+    - Color markers based on rank: Green (#28A745) for 1-3, Yellow (#F5A461) for 4-10, Red (#E63946) for 11-20, Gray (#CCCCCC) for >20 or no rank.
+    - Add tooltips on hover showing the rank and whether the point is in the top 3.
+  - **Design**:
+    - Background: #FFFFFF.
+    - Text: #1C2526.
+    - Montserrat font: 24px bold headings, 16px body.
+    - Framer Motion: Fade-in for the map, scale on hover for markers.
+
+### Testing
+- Test the GBP Map Rankings page to ensure the geo-grid map renders correctly with the Google Maps JavaScript API.
+- Verify that markers are placed and colored accurately based on ranking data.
+- Ensure tooltips display the correct rank and top 3 status.
+- Test error handling if the API key is invalid or missing.

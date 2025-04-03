@@ -1,0 +1,39 @@
+Modify the existing React + Node.js project to implement a SaaS-style left-hand sidebar navigation for both the admin panel and client portal:
+- Frontend:
+  - Replace the current top navigation bar with a left-hand sidebar for both admin and client views.
+  - Sidebar Design:
+    - Background: Dark green (#006039)
+    - Text: Off-white (#f4f4f2)
+    - Active item: Gold accent (#a37e2c) with a subtle background highlight (e.g., #9eca9e at 20% opacity)
+    - Width: 250px (collapsible to 60px on mobile with a hamburger toggle)
+    - Use Montserrat font (16px for menu items, bold for active items)
+    - Add Heroicons next to each menu item (e.g., 'HomeIcon' for Dashboard, 'UserGroupIcon' for Users, etc.)
+  - Admin Sidebar Menu:
+    - Dashboard (/admin/dashboard)
+    - Users (/admin/users)
+    - Subscriptions (/admin/subscriptions)
+    - API Keys (/admin/api-keys)
+    - Logout
+  - Client Sidebar Menu:
+    - Dashboard (/client/dashboard)
+    - Optimization (/client/optimization)
+    - Rankings (/client/rankings)
+    - Reviews (/client/reviews)
+    - Posts (/client/posts)
+    - Reports (/client/reports)
+    - Citations (/client/citations)
+    - Competitors (/client/competitors)
+    - Keywords (/client/keywords)
+    - Logout
+  - Right-Hand Pane:
+    - Background: Off-white (#f4f4f2)
+    - Add a horizontal sub-menu bar at the top of the right-hand pane (bg-[#c9c08f], text-[#006039]) to display sub-options for the selected main menu item (e.g., for "Optimization", sub-options might be "AI Suggestions", "Category Optimization").
+    - Sub-menu items should have hover effects (Framer Motion: scale up slightly) and active states (underline with #a37e2c).
+  - Responsive Design:
+    - On mobile, collapse the sidebar and show a hamburger menu (Heroicon 'Bars3Icon') to toggle it.
+  - Update Existing Pages:
+    - Adjust the Admin Dashboard, Users, Subscriptions, and API Keys pages to fit within the new layout (sidebar on the left, content on the right).
+    - Adjust the Client Dashboard to fit the new layout.
+  - Add Framer Motion animations:
+    - Sidebar slide-in/out when toggled on mobile.
+    - Sub-menu items fade-in when a main menu item is selected.

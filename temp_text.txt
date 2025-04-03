@@ -1,0 +1,75 @@
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.1 }}
+              className="mt-6"
+            >
+              <Card style={{ 
+                background: colors.background.white,
+                boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+                border: `1px solid ${colors.text.secondary}20`
+              }}>
+                <CardHeader>
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <CardTitle style={{ color: colors.text.dark }}>Review Timeline Analysis</CardTitle>
+                      <CardDescription style={{ color: colors.text.dark }}>
+                        Monthly review volumes and competitor comparison
+                      </CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-8">
+                    <div>
+                      <h3 className="text-lg font-semibold mb-4" style={{ color: colors.text.dark }}>
+                        Monthly Review Volume
+                      </h3>
+                      <div className="h-64">
+                        <div className="h-64 bg-gray-50 rounded-lg flex items-center justify-center">
+                          <div className="text-center p-6">
+                            <h4 className="font-semibold mb-2" style={{ color: colors.text.dark }}>
+                              Monthly Review Volume
+                            </h4>
+                            <p className="text-sm" style={{ color: colors.text.dark }}>
+                              Chart showing review volume over time with 3-8 reviews per month
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <h3 className="text-lg font-semibold mb-4" style={{ color: colors.text.dark }}>
+                        Competitor Review Comparison
+                      </h3>
+                      <div className="h-64">
+                        <div className="h-64 bg-gray-50 rounded-lg flex items-center justify-center">
+                          <div className="text-center p-6">
+                            <h4 className="font-semibold mb-2" style={{ color: colors.text.dark }}>
+                              Competitor Review Comparison
+                            </h4>
+                            <p className="text-sm" style={{ color: colors.text.dark }}>
+                              Chart showing your business (10 reviews) compared to competitors (19-47 reviews)
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                      <h4 className="text-md font-medium mb-2" style={{ color: colors.text.dark }}>
+                        Key Insights:
+                      </h4>
+                      <ul className="list-disc list-inside text-sm space-y-1" style={{ color: colors.text.dark }}>
+                        <li>Your review volume has fluctuated over the past 6 months with an average of 5.8 reviews per month</li>
+                        <li>Competitors are averaging 31.5 total reviews, which is 215% more than your business</li>
+                        <li>Competitor B has the highest review count (47) and rating (4.7), making them the market leader</li>
+                        <li>February 2024 was your strongest month with 8 new reviews</li>
+                        <li>Consider implementing a review request strategy to increase monthly review volume</li>
+                      </ul>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              

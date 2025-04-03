@@ -1,0 +1,31 @@
+Instruct the "LOCALAUTHORITY" React + Node.js SaaS application on Replit to use the Google Natural Language API for sentiment analysis, leveraging the shared Google API credentials set up in the admin panel.
+
+### Purpose of Google Natural Language API
+- **Role**: Performs sentiment analysis on GBP reviews, classifying them as Positive, Neutral, or Negative.
+- **Use Cases**:
+  - **Reviews Page**: Analyzes review text to display a sentiment distribution pie chart (Positive: Green, Neutral: Yellow, Negative: Red) and extract key phrases (e.g., "great service" for Positive).
+- **Field Testing Goal**: Ensure sentiment analysis is accurate and consistent, providing actionable insights into customer feedback for local SEO optimization.
+
+### Backend (Node.js)
+- Update `/api/client/gbp-audit/reviews/sentiment`:
+  - Retrieve the shared `apiKey` from the stored credentials (e.g., `.env` or `apiCredentials` collection).
+  - Use the `googleapis` Node.js library to make API calls to the Natural Language API (`https://language.googleapis.com/v1/documents:analyzeSentiment`).
+  - For each review:
+    - Classify sentiment as Positive, Neutral, or Negative.
+    - Extract key phrases contributing to sentiment.
+  - Return: JSON with `{ sentimentDistribution: { positive: 70, neutral: 20, negative: 10 }, keyPhrases: { positive: ["great service"], neutral: [], negative: ["long wait"] } }`.
+  - **Error Handling**:
+    - If the API key is missing, return a 401 error: `{ error: "Google Natural Language API not configured" }`.
+
+### Frontend (React)
+- Update `/client/gbp-audit/reviews`:
+  - Display the sentiment distribution as a pie chart (using Chart.js):
+    - Positive: Green (#28A745).
+    - Neutral: Yellow (#F5A461).
+    - Negative: Red (#E63946).
+  - List key phrases for each sentiment category below the chart.
+
+### Testing
+- Test the Reviews page to ensure sentiment analysis is accurate and the pie chart displays correctly.
+- Verify that key phrases are extracted and displayed for each sentiment category.
+- Ensure error handling works if the API key is invalid or missing.

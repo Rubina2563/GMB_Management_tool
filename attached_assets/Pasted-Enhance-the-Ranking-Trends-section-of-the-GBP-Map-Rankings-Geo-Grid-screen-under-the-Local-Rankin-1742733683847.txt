@@ -1,0 +1,136 @@
+Enhance the "Ranking Trends" section of the GBP Map Rankings Geo-Grid screen under the "Local Rankings" menu in the "LOCALAUTHORITY" React + Node.js SaaS application on Replit. The current section is a placeholder with text ("No keyword selected") and a list of keywords, lacking actual trend data or visualizations. Improve this section by adding historical trend data, interactive graphs, and deeper insights to help users understand how their rankings have changed over time. Ensure all text is black (#000000) for visibility against the white background, and style the tab bars with black backgrounds and white text when unselected, and orange backgrounds with white text when selected.
+
+### Objective
+- **Purpose**: Transform the "Ranking Trends" section into a dynamic and insightful component by:
+  - Adding historical trend data for the selected keyword, including metrics over time, rank volatility, and top rank achieved.
+  - Incorporating visual elements like a multi-line graph, heatmap overlay, sparkline, and timeline slider to make the data engaging.
+  - Introducing interactivity such as date range selection, hover effects, and grid point trend pop-ups.
+- **Field Testing Goal**: Ensure the section provides a clear view of historical ranking trends, is visually appealing, and allows users to interact with the data (e.g., selecting date ranges, viewing grid point trends), with all text in black for readability.
+
+### Backend Requirements
+- **Step 1: Enhance the Existing Endpoint for Historical Ranking Data**:
+  - **Endpoint**: Use the existing endpoint for fetching historical ranking data (previously set up for the GBP Map Rankings screen, likely related to the `rankingHistory` collection).
+  - **Purpose**: Update the endpoint to return additional historical data points for the "Ranking Trends" section.
+  - **New Data Points to Return**:
+    - **Historical Metrics Over Time**: An array of objects containing historical data for the selected keyword in the selected campaign, with each object including:
+      - `date`: The timestamp of the scan (e.g., "2025-03-20T10:00:00Z").
+      - `afpr`: Average First Page Rank for that scan.
+      - `tgrm`: Grid Rank Mean for that scan.
+      - `tss`: Top Spot Share for that scan.
+      - `gridData`: The geo-grid data for that scan (same format as the current geo-grid data, with latitude, longitude, rank, and inTop3 for each point).
+      - Example: `[{ date: "2025-03-20T10:00:00Z", afpr: 2.5, tgrm: 3.8, tss: 15, gridData: [{ lat: 33.45, lng: -112.07, rank: 1, inTop3: true }, ...] }, ...]`.
+    - **Rank Volatility**: A number representing the average day-to-day rank fluctuation for the selected keyword across all grid points.
+      - Calculate by averaging the absolute rank changes between consecutive scans for each grid point.
+      - Example: `2.3` (indicating an average rank change of 2.3 positions per day).
+    - **Top Rank Achieved**: An object containing the best rank achieved for the keyword across all historical scans, including the date it was achieved.
+      - Example: `{ rank: 1, date: "2025-03-15T10:00:00Z" }`.
+  - **Logic**:
+    - Query the `rankingHistory` collection to fetch all historical scans for the selected keyword in the selected campaign.
+    - Sort the scans by date in ascending order to ensure chronological order.
+    - For each scan, extract the date, AFPR, TGRM, TSS, and geo-grid data.
+    - Calculate rank volatility:
+      - For each grid point, calculate the absolute rank difference between consecutive scans.
+      - Average these differences across all grid points and scans to get the overall volatility score.
+    - Determine the top rank achieved:
+      - Iterate through all historical scans and grid points to find the lowest (best) rank.
+      - Record the rank and the date of the scan where it was achieved.
+    - Return the historical metrics, rank volatility, and top rank achieved in the response.
+
+### Frontend Requirements
+- **Step 1: Redesign the "Ranking Trends" Section**:
+  - **Location**: Update the "Ranking Trends" section, which is currently displayed below the geo-grid map in the GBP Map Rankings screen under the "Local Rankings" menu, alongside the "Ranking Summary" and "Competitor Analysis" sections.
+  - **New Data Points to Display**:
+    - **Historical Metrics Over Time**: Show the AFPR, TGRM, and TSS trends over time for the selected keyword.
+    - **Rank Volatility**: Display the average day-to-day rank fluctuation for the keyword.
+    - **Top Rank Achieved**: Show the best rank achieved for the keyword and the date it was achieved.
+    - **Grid Point Trends**: Allow users to view the rank history for a specific grid point.
+  - **Visual Elements**:
+    - **Multi-Line Graph for Metrics**:
+      - Display a multi-line graph showing AFPR, TGRM, and TSS over time.
+      - Use the following colors for each metric:
+        - AFPR: #F28C38 (Orange).
+        - TGRM: #28A745 (Green).
+        - TSS: #E63946 (Red).
+      - Plot the x-axis as dates (from historical scans) and the y-axis as the metric values.
+      - Scale the y-axis appropriately:
+        - AFPR and TGRM: 0 to 20 (rank-based).
+        - TSS: 0 to 100 (percentage).
+      - Add a legend to identify each line (AFPR, TGRM, TSS).
+      - Include a toggle to show/hide each metric (e.g., checkboxes to enable/disable AFPR).
+      - Ensure all text in the graph (labels, legend, tooltips) is black (#000000, 16px Montserrat for labels, 14px Montserrat for tooltips).
+    - **Heatmap Overlay Toggle**:
+      - Add a toggle button labeled "Show Rank Changes" to overlay a heatmap on the map.
+      - The heatmap should show rank changes between the current scan and the previous scan for each grid point:
+        - Green (#28A745) for improved ranks (e.g., rank decreased).
+        - Red (#E63946) for declined ranks (e.g., rank increased).
+        - Gray (#CCCCCC) for no change.
+      - Adjust the opacity of the heatmap to ensure the map remains visible (e.g., 50% opacity).
+      - Style the toggle button with a black background (#000000) and white text (#FFFFFF, 16px Montserrat) when unselected, and an orange background (#F28C38) with white text (#FFFFFF, 16px Montserrat) when selected.
+    - **Sparkline for Volatility**:
+      - Display a small sparkline graph showing the rank volatility trend over time.
+      - Use the same data as the multi-line graph but calculate the average rank change per day across all grid points.
+      - Style the sparkline with a neutral color (#1C2526) and a small height (e.g., 20px).
+      - Add a label above the sparkline (e.g., "Rank Volatility: 2.3") with black text (#000000, 16px Montserrat).
+    - **Timeline Slider**:
+      - Add a timeline slider below the multi-line graph to navigate through historical scans.
+      - Each position on the slider corresponds to a historical scan date.
+      - When the slider is moved, update the map to show the geo-grid data for the selected date, and update the metrics (AFPR, TGRM, TSS) to match that scan.
+      - Add a label above the slider (e.g., "Select Scan Date") with black text (#000000, 16px Montserrat).
+      - Display the selected date next to the slider with black text (#000000, 14px Montserrat).
+  - **Interactivity**:
+    - **Date Range Selection**:
+      - Add a date range selector above the multi-line graph with options:
+        - Last 7 days.
+        - Last 30 days.
+        - Last 90 days.
+        - Custom range (using a date picker).
+      - Filter the historical data to only show scans within the selected date range.
+      - Update the multi-line graph, sparkline, and timeline slider to reflect the filtered data.
+      - Style the date range selector with a white background, black text (#000000, 16px Montserrat), and a border in the primary color (#F28C38).
+      - Ensure all dropdown options and date picker text are black (#000000, 14px Montserrat).
+    - **Hover Effects on the Line Graph**:
+      - When hovering over a point on the multi-line graph, display a tooltip showing the exact values for AFPR, TGRM, and TSS on that date.
+      - Example: "Date: 2025-03-20, AFPR: 2.5, TGRM: 3.8, TSS: 15%".
+      - Ensure the tooltip text is black (#000000, 14px Montserrat) with a white background.
+    - **Grid Point Trend Pop-Ups**:
+      - Allow users to click on a grid point marker on the map to open a pop-up showing the rank trend for that specific grid point.
+      - The pop-up should include a small line graph plotting the rank over time for that grid point, using the historical geo-grid data.
+      - Style the pop-up with a white background, a border, and a close button (use #F28C38 for the close button with white text, #FFFFFF, 16px Montserrat).
+      - Ensure all text in the pop-up (headings, labels, graph text) is black (#000000, 16px Montserrat for body, 18px bold for headings).
+  - **Design**:
+    - Use the app’s existing color scheme:
+      - Primary color: #F28C38 for buttons and highlights.
+      - Positive: #28A745 (Green).
+      - Negative: #E63946 (Red).
+      - Neutral: #CCCCCC (Gray).
+    - Ensure all text (headings, subheadings, labels, tooltips, etc.) is black (#000000):
+      - Headings: 20px bold Montserrat.
+      - Subheadings: 18px bold Montserrat.
+      - Body text: 16px Montserrat.
+      - Small text (e.g., in tooltips, labels): 14px Montserrat.
+    - Style the tab bar (if applicable, or any bar with headings in the section):
+      - Unselected state: Black background (#000000) with white text (#FFFFFF, 16px Montserrat).
+      - Selected state: Orange background (#F28C38) with white text (#FFFFFF, 16px Montserrat).
+    - Add subtle animations using Framer Motion:
+      - Fade-in animation for the entire section when it loads.
+      - Scale animation on hover for the toggle button and grid point markers.
+
+### Testing
+- **Test Case 1: Data Display**:
+  - Select a campaign and keyword with multiple historical scans, and verify that the "Ranking Trends" section displays:
+    - A multi-line graph showing AFPR, TGRM, and TSS over time.
+    - A sparkline showing rank volatility.
+    - The top rank achieved with the correct date.
+- **Test Case 2: Visual Elements**:
+  - Ensure all text in the multi-line graph, sparkline, timeline slider, and pop-ups is black (#000000).
+  - Verify that the heatmap overlay toggle works, displaying rank changes on the map with the correct colors.
+  - Check that the toggle button has a black background with white text when unselected, and an orange background with white text when selected.
+  - Confirm that the sparkline reflects the volatility trend accurately.
+  - Ensure the timeline slider updates the map and metrics correctly when moved, with all associated text in black.
+- **Test Case 3: Interactivity**:
+  - Test the date range selector (e.g., Last 30 days, custom range) and verify that the graph, sparkline, and slider update to show only the selected date range, with all text in black.
+  - Hover over the multi-line graph and confirm that the tooltip shows the correct values with black text.
+  - Click on a grid point marker on the map and verify that a pop-up opens with a line graph showing the rank trend for that grid point, with all text in black.
+- **Test Case 4: Error Handling**:
+  - Test with a keyword that has no historical data and verify that the section displays a message like "No historical data available for this keyword" (in black text, #000000, 16px Montserrat).
+  - Test with a date range that has no scans and ensure the section handles it gracefully (e.g., shows an empty graph with a message in black text, #000000, 16px Montserrat).

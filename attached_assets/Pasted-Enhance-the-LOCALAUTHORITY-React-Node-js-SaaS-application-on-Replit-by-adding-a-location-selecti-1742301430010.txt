@@ -1,0 +1,59 @@
+Enhance the "LOCALAUTHORITY" React + Node.js SaaS application on Replit by adding a location selection tool at login/signup and enforcing GBP consistency across all sections, inspired by BrightLocal's location-specific dashboard approach:
+
+- Backend (Node.js):
+  - Add `/api/auth/google-connect`:
+    - Implement Google OAuth 2.0 authentication using `passport.js` or similar.
+    - Use environment variables `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` for credentials.
+    - On successful authentication, use the Google Business Profile API to fetch available GBP locations (e.g., location ID, name, address).
+    - Return: JSON array of GBP locations (e.g., `[{ id: 2962750, name: "Sample Business", address: "123 Main St" }]`) or an error if access is denied.
+  - Update `/api/client/gbp/select-location`:
+    - Accept POST request with `{ gbp_id: <selected_location_id> }`.
+    - Store the selected GBP ID in the user’s session (e.g., `req.session.gbp_id`) or update the SQLite `users` table (add `selected_gbp_id` column).
+    - Return: Success message or error.
+  - Modify existing endpoints to filter by selected GBP ID:
+    - `/api/client/gbp/audit`: Filter business info, reviews, posts, performance, and citation summary by `gbp_id`.
+    - `/api/client/reputation-management/*`: Filter review data by `gbp_id`.
+    - `/api/client/content-management/*`: Filter post data by `gbp_id`.
+    - `/api/client/local-ranking/*`: Filter ranking data by `gbp_id`.
+    - `/api/client/local-links/*`: Filter citation data by `gbp_id`.
+    - `/api/client/optimization/insights`: Use `gbp_id` for all aggregated data.
+    - `/api/client/reports/generate`: Include data only for the selected `gbp_id`.
+  - Credit System: 0 credits for location selection (free action).
+
+- Frontend (React):
+  - **Login/Signup Flow**:
+    - After successful login/signup, display a modal or redirect to `/select-location`:
+      - Title: "Connect Your Google Account".
+      - Button: "Connect with Google" (#F28C38 with #FFFFFF text, hover #F5A461) triggers `/api/auth/google-connect`.
+      - Option: "Skip for Now" (#D3D7D9 with #1C2526 text).
+    - On Google connection, show a dropdown of GBP locations fetched from the API.
+    - "Select Location" button (#F28C38) submits the choice to `/api/client/gbp/select-location` and redirects to `/local-dashboard`.
+  - **Dashboard Behavior**:
+    - Update `/local-dashboard`:
+      - If no GBP is selected, display a prominent card: "Please Select a GBP Location" with a "Choose Location" button (#F28C38) reopening the selection modal.
+      - Once selected, show a header with the GBP name (e.g., "Sample Business - 123 Main St") and a "Change Location" button (#F28C38) to update the selection.
+    - Ensure all sections (Local Dashboard, Reputation Management, Content Management, Local Ranking, Local Links, GBP Audit, Optimization, Reports) display data for the selected GBP.
+  - **Dynamic Updates**:
+    - Use React Context or Redux to store and propagate the selected `gbp_id` across all components.
+    - Re-fetch data for each section when `gbp_id` changes (e.g., on location switch).
+  - **Design**:
+    - Background: #FFFFFF.
+    - Text: #1C2526 (primary), #D3D7D9 (secondary).
+    - Buttons: #F28C38 with #FFFFFF text, hover #F5A461.
+    - Modal: Centered, with #F28C38 border, fade-in animation (Framer Motion).
+    - Montserrat font: 24px bold for headers, 16px for body.
+
+- Interdependencies:
+  - Update all existing API calls to include `gbp_id` as a query parameter or session variable.
+  - Ensure GBP Audit includes a citation summary from Local Links data for the selected `gbp_id`.
+
+- Testing:
+  - Verify Google OAuth integration and GBP location fetch.
+  - Test location selection persistence across sessions and sections.
+  - Confirm all menus (Local Dashboard, Reputation Management, etc.) reflect the selected GBP data.
+  - Test "Skip" and "Change Location" workflows.
+  - Ensure UI consistency with the "LOCALAUTHORITY" design.
+
+- Deployment Notes:
+  - Add environment variables in Replit: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`.
+  - Mock GBP locations if API access is unavailable (e.g., 3 sample locations).

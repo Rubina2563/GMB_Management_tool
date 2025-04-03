@@ -1,0 +1,100 @@
+          <motion.div
+            key="quick-actions"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.3 }}
+          >
+            <Card className="shadow-sm bg-white">
+              <CardHeader>
+                <CardTitle className="text-2xl font-bold text-black font-['Montserrat']">
+                  Quick Actions
+                </CardTitle>
+                <CardDescription className="text-gray-600">
+                  Frequently used actions for your business profile
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {[
+                    { title: 'Post Update', icon: Building, description: 'Share news or offers' },
+                    { title: 'Respond to Reviews', icon: Star, description: 'Reply to customer feedback' },
+                    { title: 'Update Hours', icon: Clock, description: 'Change business hours' },
+                    { title: 'Run Promotion', icon: Globe, description: 'Create a special offer' },
+                    { title: 'Update Photos', icon: MapPin, description: 'Refresh business images' },
+                    { title: 'View Insights', icon: ChartBarIcon, description: 'Check performance metrics' },
+                  ].map((action, index) => (
+                    <motion.div
+                      key={index}
+                      whileHover={{ scale: 1.03 }}
+                      whileTap={{ scale: 0.97 }}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, delay: index * 0.05 }}
+                      className="bg-white p-5 rounded-lg border shadow-sm hover:shadow-md cursor-pointer transition-all duration-200"
+                    >
+                      <div className="flex items-center mb-3">
+                        <div className="h-10 w-10 rounded-full bg-[#F28C38]/10 flex items-center justify-center mr-3">
+                          <div className="h-5 w-5 text-[#F28C38]">
+                            {React.createElement(action.icon, { className: "h-5 w-5" })}
+                          </div>
+                        </div>
+                        <h3 className="font-bold text-black font-['Montserrat']">{action.title}</h3>
+                      </div>
+                      <p className="text-sm text-gray-600">{action.description}</p>
+                    </motion.div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+            
+            <div className="mt-6">
+              <Card className="shadow-sm bg-white">
+                <CardHeader>
+                  <CardTitle className="text-xl font-bold text-black font-['Montserrat']">
+                    Scheduled Actions
+                  </CardTitle>
+                  <CardDescription className="text-gray-600">
+                    Upcoming automated tasks for your business
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-4">
+                    <li className="flex items-center justify-between border-b pb-4">
+                      <div className="flex items-center">
+                        <div className="h-8 w-8 rounded-full bg-[#6B5B95]/10 flex items-center justify-center mr-3">
+                          <RefreshCcw className="h-4 w-4 text-[#6B5B95]" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-black">Weekly Performance Report</p>
+                          <p className="text-sm text-gray-500">Scheduled for Friday, 9:00 AM</p>
+                        </div>
+                      </div>
+                      <Button variant="outline" size="sm" className="border-[#F28C38] text-[#F28C38] hover:bg-[#F28C38]/10">
+                        Edit
+                      </Button>
+                    </li>
+                    <li className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <div className="h-8 w-8 rounded-full bg-[#F28C38]/10 flex items-center justify-center mr-3">
+                          <Star className="h-4 w-4 text-[#F28C38]" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-black">Review Monitoring</p>
+                          <p className="text-sm text-gray-500">Running daily at 10:00 AM</p>
+                        </div>
+                      </div>
+                      <Button variant="outline" size="sm" className="border-[#F28C38] text-[#F28C38] hover:bg-[#F28C38]/10">
+                        Edit
+                      </Button>
+                    </li>
+                  </ul>
+                </CardContent>
+              </Card>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}

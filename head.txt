@@ -1,0 +1,100 @@
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '@/lib/auth';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { queryClient } from '@/lib/queryClient';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Link } from 'wouter';
+import { 
+  ArrowRight, Search, BarChart3, Key, ExternalLink, 
+  Loader2, MapPin, Phone, Globe, Clock, Star, 
+  Building, RefreshCcw, ChevronRight, ChevronDown,
+  Rocket, CheckCircle2, AlertCircle, Activity,
+  MapPin as LocationIcon, Search as SearchIcon, Link as LinkIcon
+} from 'lucide-react';
+import { 
+  BuildingStorefrontIcon, 
+  ChartBarIcon, 
+  CheckIcon, 
+  GlobeAltIcon, 
+  MapPinIcon 
+} from '@heroicons/react/24/outline';
+import { motion, AnimatePresence } from 'framer-motion';
+import axios from 'axios';
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogDescription, 
+  DialogFooter, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogTrigger 
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast } from "@/hooks/use-toast";
+
+// Define dashboard tabs
+type DashboardTab = 'overview' | 'gbp-info' | 'quick-actions';
+
+export default function ClientDashboard() {
+  const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState<DashboardTab>('overview');
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [selectedLocationId, setSelectedLocationId] = useState<number | null>(null);
+  
+  // Animation variants for staggered card reveal
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.2
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: {
+        duration: 0.5
+      }
+    }
+  };
+  
+  // Query for API keys to check if user has set them up
+  const { data: apiKeysData, isLoading: isLoadingApiKeys } = useQuery({
+    queryKey: ['/api/api-keys'],
+    queryFn: async () => {
+      try {
+        const response = await axios.get('/api/api-keys');
+        return response.data;
+      } catch (error) {
+        console.error('Error fetching API keys:', error);
+        return { api_keys: null };
+      }
+    }
+  });
+  
+  // Query for GBP locations
+  const { 
+    data: gbpLocations,
+    isLoading: isLoadingLocations,
+    isError: isErrorLocations
+  } = useQuery({
+    queryKey: ['/api/gbp/locations'],
+    queryFn: async () => {
+      try {
+        const response = await axios.get('/api/gbp/locations');
+        return response.data;

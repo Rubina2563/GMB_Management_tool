@@ -1,0 +1,67 @@
+Develop the "Local Dashboard" tab under the "Dashboard" menu in the "LOCALAUTHORITY" React + Node.js SaaS application on Replit. Enhance the top bar to include client management features and improve location switching, while retaining the existing summary cards. Ensure the design aligns with the existing client panel, with all text in black (#000000) for visibility against the white background, and tab bars styled with a black background (#000000) and white text (#FFFFFF) when unselected, and an orange background (#F28C38) with white text (#FFFFFF) when selected.
+
+Objective
+Purpose: Upgrade the top bar of the "Local Dashboard" tab to:
+Display the total number of clients.
+Include a client switcher dropdown.
+Include a location switcher dropdown.
+Relocate the "Add New Location" button to the top bar.
+Update the dashboard dynamically based on client and location selections.
+Field Testing Goal: Ensure the top bar offers an intuitive overview of client and location management, maintains design consistency, and enables seamless switching between clients and locations.
+Backend Requirements
+Step 1: Modify the Existing Endpoint for Dashboard Data:
+Endpoint: Enhance the existing dashboard data endpoint (e.g., /api/client/dashboard).
+Purpose: Include client and location data for the authenticated user.
+Response Data:
+numberOfClients: Total number of clients managed by the user (e.g., 20).
+clients: Array of client objects, each with:
+id: Client ID (e.g., 1).
+name: Client name (e.g., "Client A").
+locations: Array of location objects, each with:
+id: Location ID (e.g., 1).
+name: Location name (e.g., "Location A").
+Example: { numberOfClients: 20, clients: [{ id: 1, name: "Client A", locations: [{ id: 1, name: "Location A" }, ...] }, ...] }.
+Logic:
+Query the database for all clients associated with the authenticated user.
+Retrieve each client’s locations.
+Calculate the total number of clients.
+Return the aggregated data in the response.
+Frontend Requirements
+Step 1: Enhance the Top Bar in the "Local Dashboard" Tab:
+Location: Update the top bar within the "Local Dashboard" tab under the "Dashboard" menu.
+New Elements:
+Number of Clients Card: Display the total number of clients (e.g., "Clients: 20").
+Client Switcher Dropdown: Dropdown listing all clients by name.
+Location Switcher Dropdown: Dropdown listing locations for the selected client.
+"Add New Location" Button: Button with a plus icon (e.g., "Add Location").
+Layout:
+Position the "Number of Clients" card with existing summary cards (e.g., Review Summary, Post Engagement).
+Place the Client Switcher dropdown beside the "Number of Clients" card.
+Place the Location Switcher dropdown beside the Client Switcher dropdown.
+Position the "Add New Location" button on the right side, near the timeframe filter or user profile dropdown.
+Styling:
+Summary Cards: White background, orange accents (#F28C38), black text (#000000, 16px Montserrat).
+Dropdowns: White background, black text (#000000, 16px Montserrat), orange border (#F28C38).
+Button: Orange background (#F28C38), white text (#FFFFFF, 16px Montserrat), plus icon.
+Tab Bar: Black background (#000000) with white text (#FFFFFF) when unselected; orange background (#F28C38) with white text (#FFFFFF) when selected.
+Interactivity:
+On selecting a client from the Client Switcher, update the Location Switcher with that client’s locations.
+On selecting a location from the Location Switcher, refresh the dashboard with data for that location.
+On clicking "Add New Location," open a modal or navigate to a page for adding a location to the selected client.
+Design:
+Ensure all text is black (#000000).
+Apply fade-in animations for dropdown updates or dashboard refreshes using Framer Motion.
+Testing
+Test Case 1: Data Display:
+Confirm the "Number of Clients" card shows the correct total.
+Verify the Client Switcher dropdown lists all clients.
+Check the Location Switcher dropdown displays locations for the selected client.
+Ensure the "Add New Location" button is visible and styled correctly.
+Test Case 2: Interactivity:
+Select a client and confirm the Location Switcher updates with relevant locations.
+Select a location and verify the dashboard reflects that location’s data.
+Click "Add New Location" and ensure it triggers the correct action (modal or navigation).
+Test Case 3: Visual Elements:
+Ensure all text is black (#000000).
+Verify tab bars follow the specified styling (black/white unselected, orange/white selected).
+Check dropdowns and button align with the app’s design.

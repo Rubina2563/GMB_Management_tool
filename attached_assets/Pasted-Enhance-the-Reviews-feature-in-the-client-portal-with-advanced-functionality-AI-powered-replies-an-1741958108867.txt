@@ -1,0 +1,55 @@
+Enhance the Reviews feature in the client portal with advanced functionality, AI-powered replies, and a unique design, integrating the following recommendations:
+
+- Backend:
+  - Update "/api/client/reviews/pull":
+    - Pull reviews only from GBPs linked to active campaigns (cross-reference with the Campaigns table in SQLite).
+    - Support filtering by date range (last 7/30/90 days) and rating (1-5 stars).
+    - Cost: 1 credit per pull (deduct from client credit balance, mock implementation).
+  - Add endpoints:
+    - "/api/client/reviews/reply": Send a reply to a review (require manual approval via 'Send' button, mock Google API response).
+    - "/api/client/reviews/bulk-reply": Handle bulk replies (generate AI suggestions for selected reviews, require approval via 'Review & Approve All' button, mock Google API).
+    - "/api/client/reviews/request": Automate review requests (mock email/SMS via Twilio, admin-managed).
+    - "/api/client/reviews/ai-suggest": Generate replies using the selected LLM (OpenAI, Claude, DeepSeek, Grok). Use client’s API key if provided (free), otherwise use our API (2 credits per reply). Prompt: "Generate a warm, empathetic, human-like reply to this review, incorporating the business’s primary keyword [keyword] and location [location]. For positive reviews, express gratitude and encourage future visits (e.g., 'We’re thrilled you loved our service at [location]! Come back soon!'). For negative reviews, apologize sincerely and offer a resolution (e.g., 'We’re so sorry about your experience at [location]. Please contact us to resolve this!'). Avoid robotic phrasing; use casual, friendly tones."
+    - "/api/client/reviews/notify": Send in-app and email notifications (mock) for new reviews and failed replies, including review details and a retry link.
+  - Store review data in SQLite with timestamps, response status, failure flags, and sentiment analysis (mock).
+  - Handle failed replies: Retry up to 3 times, mark as failed (flag in DB), display red badge, and send email notification (mock).
+  - Add credit management: Track credits (mock balance) and deduct for pulls (1 credit) and AI replies (2 credits if using our API).
+
+- Frontend:
+  - Add Settings in Client Dashboard:
+    - "Review Sync Settings": Toggle options "Daily (1 credit/day)" and "On-Demand (1 credit/pull)" with a visual switch (#F28C38 active, #D3D7D9 inactive), "Sync Now" button (#F28C38), and credit balance display (e.g., "150 Credits").
+    - "AI Settings": Dropdown to select LLM (OpenAI, Claude, DeepSeek, Grok) or input API key, with cost breakdown ("Our API: 2 credits/reply, Your API: Free").
+  - Enhance /client/reviews:
+    - Left-Hand Sidebar: Group under "GBP Insights" with sub-menus: "Dashboard", "Optimization", "Campaigns", "Reviews" (All Reviews, Sentiment Analysis, Review Requests).
+    - Right-Hand Pane:
+      - Sub-menu: "All Reviews", "Sentiment Analysis", "Review Requests".
+      - All Reviews:
+        - Display 3D cards (Framer Motion: tilt 5deg on hover, shadow #6B5B95) with glassmorphism (bg-rgba(28, 37, 38, 0.8), blur(10px), border #F28C38).
+        - Columns: Date, Rating, Text, Status (e.g., "Replied", "Failed" in #E63946 with "Failed to Reply. Try Again" button).
+        - Filters: Dropdowns for date range (7/30/90 days) and rating (1-5 stars), with real-time preview.
+        - Bulk Reply: Checkbox selection, "Generate Bulk Replies" button (#F28C38) opens modal with AI suggestions and "Review & Approve All" button.
+        - Reply Button (#F28C38) per review opens modal with AI suggestion (editable text area, "Regenerate" button #6B5B95, "Send" button #F28C38).
+      - Sentiment Analysis: Interactive bar chart (Chart.js, #6B5B95 bars) with positive (#F28C38), neutral (#D3D7D9), negative (#E63946) percentages, hover tooltips with counts.
+      - Review Requests: Button (#F28C38) to trigger a modal (email/SMS options).
+  - Reply Modal:
+    - Show AI-generated suggestion (editable text area), "Regenerate" button (#6B5B95), "Send" button (#F28C38).
+    - Bulk Reply Modal: List selected reviews with AI suggestions, "Review & Approve All" button (#F28C38).
+  - Client Dashboard Updates:
+    - Widget: "Recent Reviews" (e.g., "2 new reviews today") with mini-chart (Chart.js, #6B5B95), and "Review Health Score" (e.g., 80/100, based on response rate/rating average).
+    - "Recent Activity": Add "New Review Received", "Reply Sent", "Reply Failed" (e.g., "Reply to 'Great service' sent at 10 AM").
+  - Notifications:
+    - In-app: Toast (bg-[#1C2526], text-[#FFFFFF], Heroicon 'BellIcon') for new reviews/failed replies.
+    - Email: Mock notification with review details, retry link for failures.
+  - Design:
+    - 3D Cards: Framer Motion (tilt on hover, scale on click), glassmorphism (rgba(28, 37, 38, 0.8), blur).
+    - Gradient background (#1C2526 to #0D1214).
+    - Use #F28C38 (positive), #E63946 (negative), #6B5B95 (charts).
+    - Montserrat font (24px bold headings, 16px body).
+  - Interdependencies:
+    - Sync review data (ratings, responses, sentiment) to Reports for PDF export (js-pdf).
+    - Update Campaigns with review keywords for optimization.
+
+- Testing:
+  - Verify credit deductions (1 credit/pull, 2 credits/AI reply) and balance updates.
+  - Test bulk reply workflow and failed reply handling.
+  - Ensure accessibility (WCAG AA contrast ratios, e.g., #FFFFFF on #1C2526).

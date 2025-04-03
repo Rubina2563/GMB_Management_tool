@@ -1,0 +1,12 @@
+                  <TabsContent value="reviews">
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      {/* Using our enhanced ReviewsTab component */}
+                      {selectedLocationId && (
+                        <ReviewsTab locationId={selectedLocationId} />
+                      )}
+                    </motion.div>
+                  </TabsContent>

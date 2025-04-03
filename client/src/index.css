@@ -1,0 +1,259 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* Light mode theme (default) */
+  :root {
+    /* Light mode color palette */
+    --dark-base: 28, 37, 38;       /* #1C2526 - Dark Gray/Black */
+    --dark-darker: 13, 18, 20;     /* #0D1214 - Black for gradients */
+    --orange-base: 242, 140, 56;   /* #F28C38 - Orange accent */
+    --orange-light: 245, 164, 97;  /* #F5A461 - Light Orange for hover */
+    --text-primary: 255, 255, 255; /* #FFFFFF - White text */
+    --text-secondary: 211, 215, 217; /* #D3D7D9 - Light Gray */
+    --accent-purple: 107, 91, 149;  /* #6B5B95 - Purple tech accent */
+    --accent-red: 230, 57, 70;      /* #E63946 - Red alert color */
+    
+    /* Light mode background colors */
+    --background-white: 255, 255, 255; /* #FFFFFF */
+    --background-light: 252, 252, 252; /* #FCFCFC */
+    
+    /* Light mode text colors */
+    --text-dark: 26, 26, 26;        /* #1A1A1A */
+    
+    /* System semantic colors - Light mode */
+    --background: var(--dark-base);
+    --foreground: var(--text-primary);
+    --card: var(--dark-base);
+    --card-foreground: var(--text-primary);
+    --popover: var(--dark-base);
+    --popover-foreground: var(--text-primary);
+    --primary: var(--orange-base);
+    --primary-foreground: var(--text-primary);
+    --secondary: var(--text-secondary);
+    --secondary-foreground: var(--dark-base);
+    --muted: var(--text-secondary);
+    --muted-foreground: 215, 215, 215;
+    --accent: var(--accent-purple);
+    --accent-foreground: var(--text-primary);
+    --destructive: var(--accent-red);
+    --destructive-foreground: var(--text-primary);
+    --border: var(--text-secondary);
+    --input: var(--text-secondary);
+    --ring: var(--orange-base);
+    
+    /* Border radius */
+    --radius: 0.5rem;
+  }
+  
+  /* Dark mode theme */
+  [data-theme="dark"] {
+    /* Dark mode color palette */
+    --dark-base: 13, 17, 23;       /* #0D1117 - GitHub Dark mode background */
+    --dark-darker: 1, 4, 9;        /* #010409 - Deeper black for contrast */
+    --orange-base: 242, 140, 56;   /* #F28C38 - Same orange accent (brand consistency) */
+    --orange-light: 245, 164, 97;  /* #F5A461 - Same light orange */
+    --text-primary: 255, 255, 255; /* #FFFFFF - White text */
+    --text-secondary: 139, 148, 158; /* #8B949E - GitHub Dark mode secondary text */
+    --accent-purple: 127, 111, 169; /* #7F6FA9 - Lighter purple for dark mode */
+    --accent-red: 248, 81, 73;     /* #F85149 - GitHub Dark mode red */
+    
+    /* Dark mode background colors */
+    --background-white: 22, 27, 34; /* #161B22 - GitHub Dark mode container */
+    --background-light: 36, 41, 46; /* #24292E - GitHub Dark mode header */
+    
+    /* Dark mode text colors */
+    --text-dark: 230, 237, 243;     /* #E6EDF3 - GitHub Dark mode primary text */
+    
+    /* System semantic colors - Dark mode */
+    --background: var(--dark-base);
+    --foreground: var(--text-primary);
+    --card: 22, 27, 34;             /* #161B22 - GitHub Dark mode card */
+    --card-foreground: var(--text-primary);
+    --popover: 22, 27, 34;          /* #161B22 - GitHub Dark mode popover */
+    --popover-foreground: var(--text-primary);
+    --primary: var(--orange-base);
+    --primary-foreground: var(--text-primary);
+    --secondary: var(--text-secondary);
+    --secondary-foreground: var(--text-primary);
+    --muted: 48, 54, 61;            /* #30363D - GitHub Dark mode border */
+    --muted-foreground: 139, 148, 158; /* #8B949E - GitHub Dark mode muted text */
+    --accent: var(--accent-purple);
+    --accent-foreground: var(--text-primary);
+    --destructive: var(--accent-red);
+    --destructive-foreground: var(--text-primary);
+    --border: 48, 54, 61;           /* #30363D - GitHub Dark mode border */
+    --input: 48, 54, 61;            /* #30363D - GitHub Dark mode input */
+    --ring: var(--orange-base);
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+    /* Light mode background by default */
+    background: white;
+    color: rgb(var(--text-dark));
+    min-height: 100vh;
+  }
+  
+  /* Dark mode specific styles */
+  body.dark-mode {
+    background: rgb(var(--dark-base));
+    background: linear-gradient(to bottom, rgb(var(--dark-base)), rgb(var(--dark-darker)));
+    color: rgb(var(--text-primary));
+  }
+}
+
+/* Custom utility classes for our color system */
+@layer utilities {
+  .bg-gradient-dark {
+    background: linear-gradient(to bottom, rgb(var(--dark-base)), rgb(var(--dark-darker)));
+  }
+  
+  .bg-gradient-orange {
+    background: linear-gradient(to right, rgb(var(--orange-base)), rgb(var(--orange-light)));
+  }
+  
+  .border-accent {
+    border-color: rgb(var(--orange-base));
+  }
+  
+  .text-accent {
+    color: rgb(var(--orange-base));
+  }
+  
+  .hover-scale {
+    transition: transform 0.2s ease-in-out;
+  }
+  
+  .hover-scale:hover {
+    transform: scale(1.03);
+  }
+  
+  /* Button styles */
+  .btn-primary {
+    @apply bg-gradient-orange text-white hover:opacity-90 hover-scale;
+  }
+  
+  .btn-secondary {
+    @apply bg-transparent border border-orange-base text-orange-base hover:bg-orange-base/10;
+  }
+  
+  /* Card styles with glassmorphism */
+  .card-glass {
+    @apply bg-dark-base/80 backdrop-blur-lg border border-orange-base/20 shadow-lg;
+  }
+
+  /* Light card style for right panel content */
+  .card-light {
+    @apply bg-white/95 backdrop-blur-sm border border-orange-base/20 shadow-md text-slate-800;
+  }
+  
+  /* Custom progress bar indicators based on value */
+  .progress {
+    @apply relative overflow-hidden;
+  }
+  
+  .progress-indicator {
+    @apply absolute left-0 top-0 h-full transition-all duration-500 ease-in-out;
+  }
+  
+  /* Health score progress bar styling */
+  .progress-health .progress-indicator {
+    @apply h-full;
+  }
+  
+  .progress-health[data-value="high"] .progress-indicator {
+    @apply bg-green-500;
+  }
+  
+  .progress-health[data-value="medium"] .progress-indicator {
+    @apply bg-yellow-500;
+  }
+  
+  .progress-health[data-value="low"] .progress-indicator {
+    @apply bg-orange-500;
+  }
+  
+  .progress-health[data-value="critical"] .progress-indicator {
+    @apply bg-red-500;
+  }
+  
+  /* Original progress bar indicators */
+  .bg-green-100 .progress-indicator {
+    @apply bg-green-500;
+  }
+  
+  .bg-yellow-100 .progress-indicator {
+    @apply bg-yellow-500;
+  }
+  
+  .bg-orange-100 .progress-indicator {
+    @apply bg-orange-500;
+  }
+  
+  .bg-red-100 .progress-indicator {
+    @apply bg-red-500;
+  }
+  
+  /* Custom Tailwind UI progress bar styling for the design */
+  .progress-indicator {
+    background-color: #F28C38;
+  }
+  
+  /* Optimization progress bars - specify heights clearly */
+  .progress-bar-large .progress-indicator {
+    border-radius: 0.375rem; /* rounded-full */
+    height: 0.625rem; /* h-2.5 */
+  }
+  
+  .progress-bar-small .progress-indicator {
+    border-radius: 0.375rem; /* rounded-full */
+    height: 0.25rem; /* h-1 */
+  }
+  
+  /* Dark mode specific utility classes */
+  .dark-mode .card-light,
+  [data-theme="dark"] .card-light {
+    @apply bg-gray-800/95 text-gray-100;
+  }
+  
+  .dark-mode .text-slate-800,
+  [data-theme="dark"] .text-slate-800 {
+    color: rgb(var(--text-dark));
+  }
+  
+  /* TopBar dark mode styles */
+  .dark-mode .top-bar,
+  [data-theme="dark"] .top-bar {
+    @apply bg-dark-base border-dark-darker;
+  }
+  
+  /* SideBar dark mode styles */
+  .dark-mode .sidebar,
+  [data-theme="dark"] .sidebar {
+    background: linear-gradient(to bottom, rgb(var(--dark-base)), rgb(var(--dark-darker)));
+  }
+  
+  /* Input dark mode styles */
+  .dark-mode input,
+  [data-theme="dark"] input {
+    @apply bg-dark-darker border-dark-darker text-text-primary;
+  }
+  
+  /* Card dark mode styles */
+  .dark-mode .card,
+  [data-theme="dark"] .card {
+    @apply bg-dark-base border-dark-darker text-text-primary;
+  }
+  
+  /* Button dark mode styles - preserve orange branding */
+  .dark-mode .btn-secondary,
+  [data-theme="dark"] .btn-secondary {
+    @apply border-orange-base text-orange-base;
+  }
+}

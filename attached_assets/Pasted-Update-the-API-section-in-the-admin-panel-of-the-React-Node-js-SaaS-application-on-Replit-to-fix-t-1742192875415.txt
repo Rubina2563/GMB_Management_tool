@@ -1,0 +1,54 @@
+Update the API section in the admin panel of the React + Node.js SaaS application on Replit to fix the DataForSEO API configuration, ensuring proper authentication, endpoint usage, and integration with the client panel:
+
+- Backend (Node.js):
+  - Update API Authentication for DataForSEO:
+    - Use Basic Authentication with email and API password (not the dashboard password).
+    - Credentials: Fetch from environment variables `DATAFORSEO_EMAIL` (e.g., your_email@example.com) and `DATAFORSEO_API_KEY` (API password from DataForSEO dashboard).
+    - Encode credentials in Base64 format: `Base64(<DATAFORSEO_EMAIL>:<DATAFORSEO_API_KEY>)`.
+    - Pass in the `Authorization` header: `Authorization: Basic <Base64-encoded credentials>`.
+    - Example: If `DATAFORSEO_EMAIL` is "your_email@example.com" and `DATAFORSEO_API_KEY` is "your_api_password", the header should be `Authorization: Basic eW91cl9lbWFpbEBleGFtcGxlLmNvbTp5b3VyX2FwaV9wYXNzd29yZA==`.
+  - Update `/api/admin/dataforseo-config`:
+    - Validate credentials by making a test call to DataForSEO’s Backlinks API (`/v3/backlinks/summary`).
+    - Mock Response (if API key unavailable): Return sample data with 20 backlinks.
+    - Store validated credentials in SQLite (`api_configs` table: api_name, email, api_key, status).
+  - Update Endpoints for Backlink/Keyword Data:
+    - `/api/client/gbp/backlinks`:
+      - POST request to `https://api.dataforseo.com/v3/backlinks/backlinks`.
+      - Body: `{ "target": "<GBP website URL>", "limit": 100 }`.
+      - Return: Total backlinks, citation links (directories like yelp.com), authority links (dofollow, page rank >500).
+    - `/api/client/keywords/rankings`:
+      - POST request to `https://api.dataforseo.com/v3/keywords_data/google_ads/keywords_for_site/live`.
+      - Body: `{ "target": "<GBP website URL>", "location_name": "<GBP city>", "language_code": "en" }`.
+      - Return: Keyword rankings in the local pack.
+    - Rate Limit: Handle 2000 calls/minute (mock: delay if exceeded, return 429 error).
+  - Error Handling:
+    - Handle 401 Unauthorized (invalid credentials), 429 Rate Limit Exceeded, and other errors with descriptive messages.
+    - Log errors in SQLite (`api_usage` table: api_name, endpoint, timestamp, error).
+  - Credit System: 1 credit per backlink/keyword request (deduct from mock balance).
+
+- Frontend (React) - Admin Panel (/admin/api-config):
+  - Update DataForSEO Section:
+    - Input Fields: Email, API Key (hide API key input for security).
+    - "Save & Test" button (#F28C38 with #FFFFFF text, hover #F5A461) triggers `/api/admin/dataforseo-config`.
+    - Status: Show "Connected" (#F28C38) or "Failed" (#E63946) with error message (e.g., "Invalid credentials").
+  - Design:
+    - Background: #FFFFFF.
+    - Text: #1C2526 (primary), #D3D7D9 (secondary).
+    - Framer Motion: Fade-in for forms, scale on hover for buttons.
+    - Montserrat font: 24px bold headings, 16px body.
+
+- Frontend (React) - Client Panel (/client/gbp-audit):
+  - Ensure Backlink/Keyword Endpoints Work:
+    - "Run Backlink Audit" button (#F28C38) calls `/api/client/gbp/backlinks`.
+    - "Check Rankings" button (#F28C38) calls `/api/client/keywords/rankings`.
+    - Display results in a table (#1C2526 text).
+  - Notifications:
+    - Toast (bg-#F28C38, text-#FFFFFF) for success ("Backlink audit complete").
+    - Toast (bg-#E63946, text-#FFFFFF) for errors ("Invalid DataForSEO credentials").
+
+- Testing:
+  - Add environment variables in Replit: `DATAFORSEO_EMAIL`, `DATAFORSEO_API_KEY`.
+  - Test authentication with mock credentials (e.g., return 401 if invalid).
+  - Verify backlink/keyword endpoints return data (mock if API key unavailable).
+  - Confirm rate limit handling and error messages.
+  - Ensure UI consistency with existing design.

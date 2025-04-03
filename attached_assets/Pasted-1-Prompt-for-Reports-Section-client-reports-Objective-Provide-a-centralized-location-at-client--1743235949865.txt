@@ -1,0 +1,114 @@
+1. Prompt for Reports Section (/client/reports)
+Objective
+Provide a centralized location at /client/reports for users to generate and download actionable PDF reports for various aspects of their Google Business Profile (GBP) optimization. Each report will be represented by a placeholder with a description of its purpose and content, avoiding duplication of charts or data already shown in the GBP Insights sections under /client/gbp-management/.
+
+Backend Requirements
+Endpoint: /api/client/gbp/reports/generate
+Method: POST
+Request Body:
+json
+
+Collapse
+
+Wrap
+
+Copy
+{
+  "locationId": "string", // GBP location ID
+  "reportType": "string" // e.g., "overall", "keywords", "reviews", etc.
+}
+Response:
+json
+
+Collapse
+
+Wrap
+
+Copy
+{
+  "success": "boolean",
+  "reportUrl": "string" // URL to the generated PDF report
+}
+Logic:
+Fetch Data: Retrieve the necessary data for the report from the GBP API and DataForSEO API, based on the reportType (e.g., reviews for the Review Management Report).
+Generate PDF: Use a PDF generation library (e.g., pdfkit or jsPDF) to create the report following the template designed earlier (cover page, table of contents, report sections, action plan).
+Store PDF: Save the generated PDF to a temporary storage location (e.g., AWS S3) and return a downloadable URL.
+Branding: Include the Authority Local logo, timestamps, and client information in the PDF, as per the template.
+Frontend Design for Reports Section
+Location: /client/reports
+Layout:
+Header:
+Title: "Reports", text-black, 18px Montserrat font, bold.
+Subtitle: "Generate actionable PDF reports for your Google Business Profile", text-gray-500, 14px Montserrat font.
+Report Placeholders:
+Display each report type as a card in a grid layout (e.g., 2-3 cards per row, depending on screen size).
+Card Design:
+Background: bg-white border border-gray-200 (#FFFFFF background, #E5E7EB border).
+Title: Report name (e.g., "Overall GBP Performance Summary"), text-black, 16px Montserrat font, bold.
+Description: Brief description of the report’s purpose and content, text-gray-500, 14px Montserrat font.
+Button: "Download Report", bg-orange-base hover:bg-orange-light text-white (#F97316, hover #FB923C, #FFFFFF text).
+Interactivity:
+Clicking the "Download Report" button triggers the /api/client/gbp/reports/generate endpoint, generates the PDF, and initiates a download.
+Placeholders for Each Report Type
+Overall GBP Performance Summary:
+Title: "Overall GBP Performance Summary"
+Description: "A comprehensive overview of your Google Business Profile’s optimization status, including scores for keyword optimization, review response, posting schedule, citations, performance, and competitor benchmarking. Includes a prioritized list of recommendations to improve your overall score."
+Button: "Download Report" (bg-orange-base hover:bg-orange-light text-white).
+Keyword Optimization Report:
+Title: "Keyword Optimization Report"
+Description: "Detailed insights into your GBP’s keyword performance, including a list of suggested keywords to improve visibility, their search volumes, and difficulty levels. Provides actionable steps to incorporate these keywords into your description and posts."
+Button: "Download Report" (bg-orange-base hover:bg-orange-light text-white).
+Review Management Report:
+Title: "Review Management Report"
+Description: "An analysis of your GBP reviews, highlighting priority reviews that need attention and common themes in customer feedback. Includes recommendations to improve your review response rate and address customer concerns effectively."
+Button: "Download Report" (bg-orange-base hover:bg-orange-light text-white).
+Posting Strategy Report:
+Title: "Posting Strategy Report"
+Description: "Insights into your GBP posting schedule, including optimal times to post for maximum visibility and trends in post performance. Offers a tailored strategy to increase post frequency and engagement with your audience."
+Button: "Download Report" (bg-orange-base hover:bg-orange-light text-white).
+Citation Opportunities Report:
+Title: "Citation Opportunities Report"
+Description: "A detailed report on citation opportunities to boost your local SEO, including a list of high-priority directories to create listings on. Includes steps to ensure NAP (Name, Address, Phone) consistency across all citations."
+Button: "Download Report" (bg-orange-base hover:bg-orange-light text-white).
+Competitor Analysis Report:
+Title: "Competitor Analysis Report"
+Description: "A comparison of your GBP performance against top competitors in your area, identifying gaps in metrics like photo count, review response rate, and posting frequency. Provides actionable recommendations to close these gaps and improve your ranking."
+Button: "Download Report" (bg-orange-base hover:bg-orange-light text-white).
+Description Insights Report:
+Title: "Description Insights Report"
+Description: "An analysis of your GBP description, focusing on keyword presence, length, and readability. Includes recommendations to optimize your description for better visibility and a link to generate a new description using our AI tools."
+Button: "Download Report" (bg-orange-base hover:bg-orange-light text-white).
+Example Layout for Reports Section (/client/reports)
+text
+
+Collapse
+
+Wrap
+
+Copy
+--------------------------------------------------
+| [Authority Local Logo]                         |
+|                                                |
+|                   Reports                      |
+| Generate actionable PDF reports for your       |
+| Google Business Profile                        |
+|                                                |
+| [Card: bg-white border border-gray-200]        |
+| **Overall GBP Performance Summary**            |
+| A comprehensive overview of your Google        |
+| Business Profile’s optimization status...      |
+| [Button: bg-orange-base hover:bg-orange-light] |
+| Download Report                                |
+|                                                |
+| [Card: bg-white border border-gray-200]        |
+| **Keyword Optimization Report**                |
+| Detailed insights into your GBP’s keyword      |
+| performance, including a list of suggested...  |
+| [Button: bg-orange-base hover:bg-orange-light] |
+| Download Report                                |
+|                                                |
+| ... (similar cards for other reports)          |
+|                                                |
+|  --------------------------------------------  |
+|  Powered by Authority Local | www.authoritylocal.com  |
+--------------------------------------------------

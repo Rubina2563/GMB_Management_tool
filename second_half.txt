@@ -1,0 +1,425 @@
+                  
+                  {hasGBPLocations && (
+                    <div className="rounded-md bg-[#f4f4f2] p-3 mt-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <GlobeAltIcon className="h-5 w-5 text-[#006039]" />
+                          <span className="text-sm font-medium text-[#006039]">Manage Locations</span>
+                        </div>
+                        <Select
+                          value={selectedLocationId ? selectedLocationId.toString() : "all"}
+                          onValueChange={handleLocationChange}
+                        >
+                          <SelectTrigger className="w-[220px] bg-[#006039] text-[#f4f4f2] border-none hover:bg-[#004d2e]">
+                            <SelectValue placeholder="Select location" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Locations</SelectItem>
+                            {gbpLocations?.locations && gbpLocations.locations.map((location: { id: number; name: string }) => (
+                              <SelectItem key={location.id} value={location.id.toString()}>
+                                {location.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent>
+                {isConnecting && (
+                  <div className="flex flex-col items-center justify-center py-12">
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
+                    >
+                      <Loader2 className="h-12 w-12 text-[#F28C38]" />
+                    </motion.div>
+                    <p className="mt-4 text-black font-medium font-['Montserrat']">Connecting to Google Business Profile...</p>
+                  </div>
+                )}
+
+                {isLoadingLocations && !isConnecting && (
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin text-[#F28C38]" />
+                  </div>
+                )}
+                
+                {isErrorLocations && !isConnecting && (
+                  <div className="bg-red-50 border border-red-200 p-4 rounded-md">
+                    <p className="text-red-700">Failed to load GBP locations. Please try again later.</p>
+                  </div>
+                )}
+
+                {!isLoadingLocations && !isErrorLocations && !isConnecting && hasGBPLocations && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* We would map through actual locations here, but for demo we'll show one */}
+                    <motion.div 
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <Card className="bg-gradient-to-br from-[#c9c08f]/70 to-[#f4f4f2] overflow-hidden shadow-md border-0">
+                        <CardHeader className="bg-[#006039]/10 pb-2">
+                          <CardTitle className="text-lg font-bold text-[#006039] font-['Montserrat']">
+                            Business Name
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="pt-4">
+                          <ul className="space-y-2">
+                            <li className="flex items-start">
+                              <MapPin className="h-5 w-5 text-[#a37e2c] mr-2 mt-0.5" />
+                              <span>123 Main St, City, State, ZIP</span>
+                            </li>
+                            <li className="flex items-start">
+                              <Phone className="h-5 w-5 text-[#a37e2c] mr-2 mt-0.5" />
+                              <span>(555) 123-4567</span>
+                            </li>
+                            <li className="flex items-start">
+                              <Globe className="h-5 w-5 text-[#a37e2c] mr-2 mt-0.5" />
+                              <span className="text-blue-600 hover:underline">
+                                <a href="https://www.example.com" target="_blank" rel="noopener noreferrer">
+                                  www.example.com
+                                </a>
+                              </span>
+                            </li>
+                            <li className="flex items-start">
+                              <Star className="h-5 w-5 text-[#a37e2c] mr-2 mt-0.5" />
+                              <span>4.5 Stars</span>
+                            </li>
+                          </ul>
+                        </CardContent>
+                        <CardFooter className="bg-[#f4f4f2]/50 flex justify-end">
+                          <Button variant="ghost" size="sm" className="text-[#006039] hover:text-[#a37e2c]">
+                            View Details <ChevronRight className="ml-1 h-4 w-4" />
+                          </Button>
+                        </CardFooter>
+                      </Card>
+                    </motion.div>
+                    
+                    <motion.div 
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, delay: 0.1 }}
+                    >
+                      <Card className="bg-white h-full">
+                        <CardHeader>
+                          <CardTitle className="text-lg font-bold text-[#006039] font-['Montserrat']">
+                            Performance Insights
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-4">
+                            <div>
+                              <h3 className="font-medium text-[#006039] mb-1">Visibility Score</h3>
+                              <p className="text-2xl font-bold text-[#a37e2c]">78%</p>
+                              <div className="mt-2 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                <div className="h-full bg-[#a37e2c] rounded-full" style={{ width: '78%' }}></div>
+                              </div>
+                            </div>
+                            <div>
+                              <h3 className="font-medium text-[#006039] mb-1">Review Rating</h3>
+                              <p className="text-2xl font-bold text-[#a37e2c]">4.5/5</p>
+                              <div className="mt-2 flex text-yellow-400">
+                                <Star className="h-5 w-5 fill-current" />
+                                <Star className="h-5 w-5 fill-current" />
+                                <Star className="h-5 w-5 fill-current" />
+                                <Star className="h-5 w-5 fill-current" />
+                                <Star className="h-5 w-5 text-yellow-200 fill-current" />
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  </div>
+                )}
+                
+                {!isLoadingLocations && !isErrorLocations && !isConnecting && !hasGBPLocations && (
+                  <div className="bg-white border border-gray-200 rounded-lg p-8 text-center">
+                    <BuildingStorefrontIcon className="h-16 w-16 mx-auto text-[#F28C38]/80 mb-4" />
+                    <h3 className="text-xl font-bold text-black mb-2 font-['Montserrat']">No GBP Locations Connected</h3>
+                    <p className="text-gray-600 mb-6">
+                      Connect your Google Business Profile to see your business information and insights.
+                    </p>
+                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="inline-block">
+                      <Button 
+                        onClick={handleConnectGBP} 
+                        className="bg-[#F28C38] hover:bg-[#F28C38]/80 text-white"
+                      >
+                        Connect GBP
+                      </Button>
+                    </motion.div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+            
+            {!isLoadingLocations && !isErrorLocations && !isConnecting && hasGBPLocations && (
+              <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Optimization Widget */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.1 }}
+                >
+                  <Card className="bg-gradient-to-br from-[#f4f4f2] to-white shadow-sm border-[#006039]/10">
+                    <CardHeader className="pb-2">
+                      <div className="flex justify-between items-center">
+                        <CardTitle className="text-md font-bold text-black font-['Montserrat'] flex items-center">
+                          <Rocket className="h-4 w-4 mr-2 text-[#F28C38]" />
+                          Optimization
+                        </CardTitle>
+                        <Link href="/client/optimization">
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                            <ArrowRight className="h-4 w-4 text-[#F28C38]" />
+                          </Button>
+                        </Link>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      {isLoadingOptimization && (
+                        <div className="flex justify-center py-4">
+                          <Loader2 className="h-5 w-5 animate-spin text-[#F28C38]" />
+                        </div>
+                      )}
+                      
+                      {isErrorOptimization && (
+                        <div className="text-sm text-red-500">
+                          Could not load optimization data
+                        </div>
+                      )}
+                      
+                      {!isLoadingOptimization && !isErrorOptimization && optimizationProgress?.progress && (
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="text-sm font-medium text-gray-600">Progress</span>
+                            <span className="text-sm font-medium text-[#F28C38]">
+                              {optimizationProgress.progress.percentage}%
+                            </span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div 
+                              className="bg-gradient-to-r from-[#F28C38] to-[#6B5B95] h-2 rounded-full" 
+                              style={{ width: `${optimizationProgress.progress.percentage}%` }}
+                            ></div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 mt-2">
+                            <div className="bg-white border border-gray-200 rounded-md p-2 flex items-center">
+                              <AlertCircle className="text-[#F28C38] h-4 w-4 mr-1.5" />
+                              <div>
+                                <p className="text-xs text-gray-500">Pending</p>
+                                <p className="text-sm font-medium text-black">
+                                  {optimizationProgress.progress.totalCount - optimizationProgress.progress.appliedCount}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="bg-white border border-gray-200 rounded-md p-2 flex items-center">
+                              <CheckCircle2 className="text-[#6B5B95] h-4 w-4 mr-1.5" />
+                              <div>
+                                <p className="text-xs text-gray-500">Applied</p>
+                                <p className="text-sm font-medium text-black">
+                                  {optimizationProgress.progress.appliedCount}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="mt-2 text-right">
+                            <Link href="/client/optimization">
+                              <Button variant="link" size="sm" className="text-[#F28C38] p-0 h-auto">
+                                View All Optimizations
+                              </Button>
+                            </Link>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {!isLoadingOptimization && !isErrorOptimization && !optimizationProgress?.progress && (
+                        <div className="text-center py-2">
+                          <p className="text-sm text-gray-500 mb-3">No optimization data available</p>
+                          <Link href="/client/optimization">
+                            <Button size="sm" className="bg-[#F28C38] hover:bg-[#F28C38]/80 text-white">
+                              Start Optimization
+                            </Button>
+                          </Link>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </motion.div>
+                
+                {/* Recent Reviews Widget */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.2 }}
+                >
+                  <Card className="bg-white shadow-sm">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-md font-bold text-black font-['Montserrat']">
+                        Recent Reviews
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex items-center space-x-2 mb-4">
+                        <div className="flex text-[#F28C38]">
+                          <Star className="h-4 w-4 fill-current" />
+                          <Star className="h-4 w-4 fill-current" />
+                          <Star className="h-4 w-4 fill-current" />
+                          <Star className="h-4 w-4 fill-current" />
+                          <Star className="h-4 w-4 fill-current" />
+                        </div>
+                        <span className="text-sm text-gray-500">1 day ago</span>
+                      </div>
+                      <p className="text-sm text-gray-700">
+                        "Great service! Very professional and quick to respond. Would definitely recommend."
+                      </p>
+                      <div className="mt-2 text-right">
+                        <Button variant="link" size="sm" className="text-[#F28C38] p-0 h-auto">
+                          View All
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+                
+                {/* Activity Widget */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.3 }}
+                >
+                  <Card className="bg-white shadow-sm">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-md font-bold text-black font-['Montserrat']">
+                        Recent Activity
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        {optimizationProgress?.progress?.recentActivity ? (
+                          optimizationProgress.progress.recentActivity.map((activity, index) => (
+                            <div key={index} className="flex items-start space-x-2 text-sm">
+                              <Activity className="h-4 w-4 text-[#6B5B95] mt-0.5" />
+                              <div>
+                                <p className="text-gray-700">{activity.action}</p>
+                                <p className="text-xs text-gray-500">{activity.date}</p>
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="py-2 text-sm text-gray-500 text-center">
+                            No recent activity
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              </div>
+            )}
+          </motion.div>
+        )}
+        
+        {activeTab === 'quick-actions' && (
+          <motion.div
+            key="quick-actions"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.3 }}
+          >
+            <Card className="shadow-sm bg-white">
+              <CardHeader>
+                <CardTitle className="text-2xl font-bold text-black font-['Montserrat']">
+                  Quick Actions
+                </CardTitle>
+                <CardDescription className="text-gray-600">
+                  Frequently used actions for your business profile
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {[
+                    { title: 'Post Update', icon: Building, description: 'Share news or offers' },
+                    { title: 'Respond to Reviews', icon: Star, description: 'Reply to customer feedback' },
+                    { title: 'Update Hours', icon: Clock, description: 'Change business hours' },
+                    { title: 'Run Promotion', icon: Globe, description: 'Create a special offer' },
+                    { title: 'Update Photos', icon: MapPin, description: 'Refresh business images' },
+                    { title: 'View Insights', icon: ChartBarIcon, description: 'Check performance metrics' },
+                  ].map((action, index) => (
+                    <motion.div
+                      key={index}
+                      whileHover={{ scale: 1.03 }}
+                      whileTap={{ scale: 0.97 }}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, delay: index * 0.05 }}
+                      className="bg-white p-5 rounded-lg border shadow-sm hover:shadow-md cursor-pointer transition-all duration-200"
+                    >
+                      <div className="flex items-center mb-3">
+                        <div className="h-10 w-10 rounded-full bg-[#F28C38]/10 flex items-center justify-center mr-3">
+                          <div className="h-5 w-5 text-[#F28C38]">
+                            {React.createElement(action.icon, { className: "h-5 w-5" })}
+                          </div>
+                        </div>
+                        <h3 className="font-bold text-black font-['Montserrat']">{action.title}</h3>
+                      </div>
+                      <p className="text-sm text-gray-600">{action.description}</p>
+                    </motion.div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+            
+            <div className="mt-6">
+              <Card className="shadow-sm bg-white">
+                <CardHeader>
+                  <CardTitle className="text-xl font-bold text-black font-['Montserrat']">
+                    Scheduled Actions
+                  </CardTitle>
+                  <CardDescription className="text-gray-600">
+                    Upcoming automated tasks for your business
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-4">
+                    <li className="flex items-center justify-between border-b pb-4">
+                      <div className="flex items-center">
+                        <div className="h-8 w-8 rounded-full bg-[#6B5B95]/10 flex items-center justify-center mr-3">
+                          <RefreshCcw className="h-4 w-4 text-[#6B5B95]" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-black">Weekly Performance Report</p>
+                          <p className="text-sm text-gray-500">Scheduled for Friday, 9:00 AM</p>
+                        </div>
+                      </div>
+                      <Button variant="outline" size="sm" className="border-[#F28C38] text-[#F28C38] hover:bg-[#F28C38]/10">
+                        Edit
+                      </Button>
+                    </li>
+                    <li className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <div className="h-8 w-8 rounded-full bg-[#F28C38]/10 flex items-center justify-center mr-3">
+                          <Star className="h-4 w-4 text-[#F28C38]" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-black">Review Monitoring</p>
+                          <p className="text-sm text-gray-500">Running daily at 10:00 AM</p>
+                        </div>
+                      </div>
+                      <Button variant="outline" size="sm" className="border-[#F28C38] text-[#F28C38] hover:bg-[#F28C38]/10">
+                        Edit
+                      </Button>
+                    </li>
+                  </ul>
+                </CardContent>
+              </Card>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}

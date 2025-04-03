@@ -1,0 +1,54 @@
+Prompt 4: Expand the Recent Activity Section
+Develop the "Local Dashboard" tab under the "Dashboard" menu in the "LOCALAUTHORITY" React + Node.js SaaS application on Replit. Expand the "Recent Activity" section with detailed, actionable activities. Ensure the design aligns with the existing client panel, with all text in black (#000000) for visibility against the white background.
+
+Objective
+Purpose: Enhance the "Recent Activity" section to:
+Include diverse activities (reviews, posts, rank changes, citations, audits).
+Provide timestamps, descriptions, and action links.
+Add activity type filters.
+Field Testing Goal: Offer a comprehensive, actionable overview of recent events for user engagement.
+Backend Requirements
+Step 1: Modify the Existing Endpoint for Dashboard Data:
+Endpoint: Enhance the existing dashboard data endpoint (e.g., /api/client/dashboard).
+Purpose: Include recent activities.
+Response Data:
+recentActivities: Array of objects with:
+type: Activity type (e.g., "review", "post").
+timestamp: DateTime (e.g., "2023-01-01T12:00:00Z").
+description: Text (e.g., "Received a 5-star review").
+actionLink: URL (e.g., "/reviews/123").
+Example: [{ type: "review", timestamp: "2023-01-01T12:00:00Z", description: "Received a 5-star review from John Doe", actionLink: "/reviews/123" }, ...].
+Logic:
+Aggregate activities from relevant sources (reviews, posts, etc.).
+Sort by timestamp (descending).
+Limit to the last 10 activities.
+Frontend Requirements
+Step 1: Expand the "Recent Activity" Section:
+Location: Update the "Recent Activity" section in the "Local Dashboard" tab.
+New Elements:
+Activity list with:
+Icon/color by type (e.g., star for reviews).
+Timestamp (e.g., "2 hours ago").
+Description.
+Action link (e.g., "View Review").
+Filters: "All," "Reviews," "Posts," etc.
+Styling:
+List/cards with white backgrounds, subtle borders.
+Type-specific icons/colors (e.g., orange #F28C38 for links).
+Black text (#000000, 16px Montserrat).
+Interactivity:
+Filter by type updates the list.
+Action links navigate or open modals.
+Design:
+All text in black (#000000).
+Filter animations with Framer Motion.
+Testing
+Test Case 1: Data Display:
+Verify diverse activities appear with correct details.
+Check sorting by recency.
+Test Case 2: Interactivity:
+Apply a filter and confirm the list updates.
+Click an action link and verify navigation/modal.
+Test Case 3: Visual Elements:
+Ensure all text is black (#000000).
+Verify type indicators and styling consistency.

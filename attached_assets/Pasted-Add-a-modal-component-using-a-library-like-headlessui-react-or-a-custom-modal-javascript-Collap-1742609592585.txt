@@ -1,0 +1,93 @@
+Add a modal component (using a library like @headlessui/react or a custom modal):
+javascript
+
+Collapse
+
+Wrap
+
+Copy
+const handleProfileSelect = (profileName) => {
+  setSelectedProfiles((prev) =>
+    prev.includes(profileName)
+      ? prev.filter((name) => name !== profileName)
+      : [...prev, profileName]
+  );
+};
+
+const handleSaveProfiles = async () => {
+  try {
+    const response = await fetch('/api/client/gbp-audit/save-profiles', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify({ selectedProfiles })
+    });
+    if (response.ok) {
+      setIsModalOpen(false);
+      // Optionally refresh the dashboard to show the new profiles
+      window.location.reload();
+    } else {
+      setError('Failed to save selected profiles');
+    }
+  } catch (err) {
+    setError('Failed to save selected profiles');
+  }
+};
+
+return (
+  <div className="relative">
+    {/* Existing Local Dashboard content */}
+    <button onClick={handleAddNewLocation} className="bg-[#F28C38] text-white px-4 py-2 rounded hover:bg-[#F5A461]">
+      Add new location
+    </button>
+
+    {/* Modal for GBP Profile Selection */}
+    {isModalOpen && (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+        <div className="bg-white p-6 rounded-lg shadow-lg max-w-lg w-full">
+          <h2 className="text-2xl font-bold mb-4 text-[#1C2526] font-montserrat">
+            Select GBP Profiles
+          </h2>
+          {error && <p className="text-red-500 mb-4">{error}</p>}
+          {profiles.length === 0 && !error && (
+            <p className="text-[#1C2526]">Loading GBP profiles...</p>
+          )}
+          {profiles.length > 0 && (
+            <div className="max-h-64 overflow-y-auto">
+              {profiles.map((profile) => (
+                <div key={profile.name} className="flex items-center mb-2">
+                  <input
+                    type="checkbox"
+                    checked={selectedProfiles.includes(profile.name)}
+                    onChange={() => handleProfileSelect(profile.name)}
+                    className="mr-2"
+                  />
+                  <span className="text-[#1C2526] font-montserrat">
+                    {profile.title} ({profile.storefrontAddress?.addressLines.join(', ')})
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="mt-4 flex justify-end space-x-2">
+            <button
+              onClick={() => setIsModalOpen(false)}
+              className="bg-gray-300 text-[#1C2526] px-4 py-2 rounded hover:bg-gray-400"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSaveProfiles}
+              disabled={selectedProfiles.length === 0}
+              className="bg-[#F28C38] text-white px-4 py-2 rounded hover:bg-[#F5A461] disabled:bg-gray-300 disabled:text-gray-500"
+            >
+              Save Selected Profiles
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+  </div>
+);

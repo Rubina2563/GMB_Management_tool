@@ -1,0 +1,50 @@
+Set up and use the DataForSEO Rank Tracker API in the admin panel of the "LOCALAUTHORITY" React + Node.js SaaS application on Replit, ensuring all API calls are managed from the backend.
+
+### Purpose of DataForSEO Rank Tracker API
+- **Role**: Fetches local ranking data for a business across a geo-grid, enabling the calculation of local SEO metrics.
+- **Use Cases**:
+  - **GBP Map Rankings Page**: Fetches ranking data for each grid point in the 5x5 geo-grid to calculate:
+    - **Average First Page Rank (AFPR)**: Average rank for top 20 positions.
+    - **Total Grid Rank Mean (TGRM)**: Average rank across all positions.
+    - **Top Spot Share (TSS)**: Percentage of top 3 appearances.
+- **Field Testing Goal**: Ensure ranking data is fetched accurately for all grid points, enabling reliable calculation of AFPR, TGRM, and TSS for hyperlocal SEO analysis.
+
+### Backend (Node.js)
+- Create a new admin endpoint `/api/admin/dataforseo/setup`:
+  - **Method**: POST
+  - **Purpose**: Allow admin users to input and save DataForSEO API credentials.
+  - **Request Body**:
+    - `login`: String (DataForSEO login).
+    - `password`: String (DataForSEO password).
+  - **Logic**:
+    - Store the credentials securely in a `.env` file or database (e.g., MongoDB collection `apiCredentials`).
+    - Validate the credentials by making a test API call (e.g., fetch account balance using `https://api.dataforseo.com/v3/serp/ping`).
+    - Return: JSON with `{ success: true, message: "DataForSEO API setup successful" }` or `{ success: false, error: "Invalid credentials" }`.
+- Update `/api/client/gbp-audit/map-rankings`:
+  - Use the stored credentials to fetch ranking data for the 5x5 geo-grid.
+  - Calculate AFPR, TGRM, and TSS based on the ranking data:
+    - **AFPR**: Average rank for top 20 positions.
+    - **TGRM**: Average rank across all positions.
+    - **TSS**: Percentage of top 3 appearances.
+  - Return: JSON with `{ afpr: 8.5, tgrm: 15.2, tss: 32.5, gridData: [{ lat, lng, rank, inTop3 }, ...] }`.
+
+### Admin Panel (React)
+- Add a new section in the admin panel under `/admin/api-settings`:
+  - **Section Title**: "DataForSEO Rank Tracker API Setup"
+  - **Form Fields**:
+    - Login (text input).
+    - Password (password input).
+  - **Submit Button**: "Save Credentials" (#F28C38 with #FFFFFF text, hover #F5A461).
+  - **Logic**:
+    - On form submission, send a POST request to `/api/admin/dataforseo/setup`.
+    - Display a success message ("API setup successful") or error message ("Failed to set up API") based on the response.
+  - **Design**:
+    - Background: #FFFFFF.
+    - Text: #1C2526.
+    - Montserrat font: 24px bold headings, 16px body.
+    - Framer Motion: Fade-in for the form, scale on hover for the button.
+
+### Testing
+- Verify that admin users can save DataForSEO credentials in the admin panel.
+- Test ranking data retrieval on the GBP Map Rankings page, ensuring accurate calculation of AFPR, TGRM, and TSS.
+- Ensure error handling works if credentials are invalid or missing.

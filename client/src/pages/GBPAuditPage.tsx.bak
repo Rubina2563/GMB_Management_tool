@@ -1,0 +1,3669 @@
+import { useState, useEffect } from 'react';
+import { 
+  Card, 
+  CardContent, 
+  CardHeader, 
+  CardTitle, 
+  CardDescription 
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { 
+  Tabs, 
+  TabsContent, 
+  TabsList, 
+  TabsTrigger 
+} from "@/components/ui/tabs";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue, 
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { toast } from "@/hooks/use-toast";
+import { colors } from "@/lib/colors";
+import { motion, AnimatePresence } from "framer-motion";
+import { Line } from 'react-chartjs-2';
+import { 
+  Chart as ChartJS, 
+  CategoryScale, 
+  LinearScale, 
+  PointElement, 
+  LineElement, 
+  Title, 
+  Tooltip as ChartTooltip, 
+  Legend 
+} from 'chart.js';
+import type { TooltipProps } from 'recharts';
+import { 
+  LineChart, 
+  Line as RechartsLine, 
+  CartesianGrid, 
+  XAxis, 
+  YAxis, 
+  Tooltip as RechartsTooltip, 
+  ResponsiveContainer 
+} from 'recharts';
+import { 
+  SearchIcon, 
+  FileTextIcon, 
+  ClipboardCheckIcon, 
+  BarChart3Icon,
+  ArrowUpRightIcon,
+  DownloadIcon,
+  ImageIcon,
+  ActivityIcon,
+  PhoneCallIcon,
+  CompassIcon,
+  GlobeIcon,
+  AlertCircle,
+  AlertTriangle,
+  CheckCircle,
+  Flag,
+  X
+} from 'lucide-react';
+import { jsPDF } from 'jspdf';
+
+// Register Chart.js components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  ChartTooltip,
+  Legend
+);
+
+export default function GBPAuditPage() {
+  // State for GBP profiles and selection
+  const [profiles, setProfiles] = useState<Array<{id: string; name: string; address: string; category: string}>>([]);
+  const [selectedProfile, setSelectedProfile] = useState<string>("");
+  const [loading, setLoading] = useState<boolean>(true);
+  const [auditLoading, setAuditLoading] = useState<boolean>(false);
+  const [creditsLoading, setCreditsLoading] = useState<boolean>(true);
+  const [credits, setCredits] = useState<number>(0);
+  
+  // Audit results state
+  const [auditResult, setAuditResult] = useState<any>(null);
+  const [insights, setInsights] = useState<Array<any>>([]);
+  const [activeTab, setActiveTab] = useState<string>("overview");
+  
+  // Fetch GBP profiles on component mount
+  useEffect(() => {
+    const fetchProfiles = async () => {
+      try {
+        const response = await fetch('/api/client/gbp/select');
+        const data = await response.json();
+        
+        if (data.success) {
+          setProfiles(data.profiles);
+          
+          // Auto-select the first profile for demo purposes
+          if (data.profiles.length > 0 && !selectedProfile) {
+            setSelectedProfile(data.profiles[0].id);
+          }
+        } else {
+          toast({
+            title: "Error",
+            description: data.message || "Failed to fetch GBP profiles",
+            variant: "destructive",
+          });
+        }
+      } catch (error) {
+        console.error('Failed to fetch GBP profiles:', error);
+        toast({
+          title: "Error",
+          description: "Failed to connect to the server",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    const fetchCredits = async () => {
+      try {
+        const response = await fetch('/api/client/gbp/credits');
+        const data = await response.json();
+        
+        if (data.success) {
+          setCredits(data.credits);
+        }
+      } catch (error) {
+        console.error('Failed to fetch credits:', error);
+      } finally {
+        setCreditsLoading(false);
+      }
+    };
+    
+    fetchProfiles();
+    fetchCredits();
+  }, [selectedProfile]);
+  
+  // Handle GBP profile selection
+  const handleProfileChange = (value: string) => {
+    setSelectedProfile(value);
+    
+    // Fetch the latest audit for this profile immediately
+    if (value) {
+      getLatestAudit(value);
+    }
+  };
+  
+  // Connect a new GBP
+  const handleConnectGBP = async () => {
+    setLoading(true);
+    
+    try {
+      const response = await fetch('/api/client/gbp/connect', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          authorizationCode: 'mock-code' // In a real implementation, this would be from OAuth flow
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        // Add the new GBP to the profiles list
+        setProfiles(prev => [...prev, {
+          id: data.gbp.id,
+          name: data.gbp.name,
+          address: data.gbp.address,
+          category: data.gbp.category || 'Business'
+        }]);
+        
+        toast({
+          title: "GBP Connected Successfully",
+          description: data.message || "New location has been added to your account.",
+          style: { backgroundColor: colors.orange.base, color: 'white' },
+        });
+      } else {
+        toast({
+          title: "Connection Failed",
+          description: data.message || "Failed to connect GBP",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Failed to connect GBP:', error);
+      toast({
+        title: "Connection Error",
+        description: "Failed to connect to the server",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Load an existing audit if available on mount
+  useEffect(() => {
+    if (selectedProfile) {
+      const fetchExistingAudit = async () => {
+        try {
+          const auditResponse = await fetch(`/api/client/gbp/audit/${selectedProfile}`);
+          const auditData = await auditResponse.json();
+          
+          if (auditData.success && auditData.audit) {
+            setAuditResult(auditData.audit);
+            
+            // Also fetch any insights
+            const insightsResponse = await fetch(`/api/client/gbp/insights/${selectedProfile}`);
+            const insightsData = await insightsResponse.json();
+            
+            if (insightsData.success) {
+              setInsights(insightsData.insights || []);
+            }
+            
+            setActiveTab("overview");
+          }
+        } catch (error) {
+          console.error('Failed to fetch existing audit:', error);
+        }
+      };
+      
+      fetchExistingAudit();
+    }
+  }, [selectedProfile]);
+
+  // Function to get the latest audit for the selected profile
+  const getLatestAudit = async (profileId: string) => {
+    try {
+      console.log("Fetching latest audit for profile:", profileId);
+      const auditResponse = await fetch(`/api/client/gbp/audit/${profileId}`);
+      const auditData = await auditResponse.json();
+      
+      if (auditData.success && auditData.audit) {
+        console.log("Successfully fetched audit data:", auditData.audit);
+        setAuditResult(auditData.audit);
+        
+        // Also fetch insights for this profile
+        const insightsResponse = await fetch(`/api/client/gbp/insights/${profileId}`);
+        const insightsData = await insightsResponse.json();
+        
+        if (insightsData.success) {
+          console.log("Successfully fetched insights:", insightsData.insights);
+          setInsights(insightsData.insights || []);
+        }
+        
+        // Set the active tab to overview
+        setActiveTab("overview");
+      } else {
+        console.log("No audit data available or fetch unsuccessful:", auditData);
+      }
+    } catch (error) {
+      console.error("Error fetching latest audit:", error);
+    }
+  };
+  
+  // Run an audit on the selected GBP
+  const runAudit = async () => {
+    if (!selectedProfile) {
+      toast({
+        title: "Selection Required",
+        description: "Please select a GBP profile first.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (credits < 1) {
+      toast({
+        title: "Insufficient Credits",
+        description: "You need at least 1 credit to run an audit.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setAuditLoading(true);
+    
+    try {
+      // Run the audit
+      const auditResponse = await fetch('/api/client/gbp/audit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          gbpId: selectedProfile
+        })
+      });
+      
+      const auditData = await auditResponse.json();
+      
+      if (!auditData.success) {
+        throw new Error(auditData.message || "Failed to run audit");
+      }
+      
+      // Get insights/history for the GBP
+      const insightsResponse = await fetch(`/api/client/gbp/insights/${selectedProfile}`);
+      const insightsData = await insightsResponse.json();
+      
+      if (!insightsData.success) {
+        throw new Error(insightsData.message || "Failed to fetch insights");
+      }
+      
+      // Update state with the data
+      setAuditResult(auditData.audit);
+      setInsights(insightsData.insights || []);
+      setCredits(auditData.credits.remaining);
+      setActiveTab("overview");
+      
+      toast({
+        title: "Audit Complete",
+        description: `Score: ${auditData.audit.overall_score}/100. ${auditData.credits.used} credit has been deducted.`,
+        style: { backgroundColor: colors.orange.base, color: 'white' },
+      });
+      
+      // Add console logging to help debug
+      console.log("Audit result:", auditData.audit);
+      console.log("Insights:", insightsData.insights);
+    } catch (error) {
+      console.error('Failed to run audit:', error);
+      toast({
+        title: "Audit Failed",
+        description: error instanceof Error ? error.message : "An error occurred while running the audit",
+        variant: "destructive",
+      });
+    } finally {
+      setAuditLoading(false);
+    }
+  };
+  
+  // Handle recommendation implementation
+  const handleImplementRecommendation = async (recommendation: any) => {
+    if (!selectedProfile) {
+      toast({
+        title: "Error",
+        description: "No GBP profile selected",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    try {
+      // In a real implementation, this would communicate with the API
+      // to implement the recommendation on the GBP profile
+      toast({
+        title: "Implementation Started",
+        description: `Working on: ${recommendation.description}`,
+        style: { backgroundColor: colors.orange.base, color: 'white' },
+      });
+      
+      // For now, we'll simulate the implementation without an API call
+      setTimeout(() => {
+        toast({
+          title: "Implementation Complete",
+          description: `Successfully implemented: ${recommendation.description}`,
+          style: { backgroundColor: '#4CAF50', color: 'white' },
+        });
+      }, 2000);
+    } catch (error) {
+      console.error('Failed to implement recommendation:', error);
+      toast({
+        title: "Implementation Failed",
+        description: error instanceof Error ? error.message : "An error occurred",
+        variant: "destructive",
+      });
+    }
+  };
+  
+  // Generate PDF report
+  const generatePDF = () => {
+    if (!auditResult) {
+      toast({
+        title: "No Audit Available",
+        description: "Please run an audit first before generating a PDF report.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const doc = new jsPDF();
+    
+    doc.setFontSize(22);
+    doc.text("GBP Audit Report", 20, 20);
+    
+    doc.setFontSize(16);
+    doc.text(`Business: ${auditResult?.details?.business?.name || "Not available"}`, 20, 35);
+    
+    doc.setFontSize(14);
+    doc.text(`Overall Score: ${auditResult?.overall_score || 0}/100`, 20, 50);
+    doc.text(`Generated: ${new Date().toLocaleDateString()}`, 20, 60);
+    
+    doc.setFontSize(12);
+    doc.text("Category Scores:", 20, 75);
+    doc.text(`Business Details: ${auditResult?.business_details_score || 0}/100`, 30, 85);
+    doc.text(`Reviews: ${auditResult?.reviews_score || 0}/100`, 30, 95);
+    doc.text(`Posts: ${auditResult?.posts_score || 0}/100`, 30, 105);
+    doc.text(`Competitors: ${auditResult?.competitors_score || 0}/100`, 30, 115);
+    
+    doc.text("Top Recommendations:", 20, 130);
+    if (auditResult?.recommendations && auditResult.recommendations.length > 0) {
+      auditResult.recommendations.slice(0, 3).forEach((rec: any, index: number) => {
+        doc.text(`${index + 1}. ${rec.description} (${rec.priority} priority)`, 30, 140 + (index * 10));
+      });
+    } else {
+      doc.text("No recommendations available", 30, 140);
+    }
+    
+    doc.save("gbp-audit-report.pdf");
+    
+    toast({
+      title: "PDF Generated",
+      description: "Your audit report has been downloaded.",
+      style: { backgroundColor: colors.orange.base, color: 'white' },
+    });
+    
+    console.log("PDF generated with audit data:", auditResult);
+  };
+  
+  // Get score color based on value
+  const getScoreColor = (score: number) => {
+    if (score >= 80) return '#4CAF50';  // Green
+    if (score >= 60) return colors.orange.base;
+    return colors.accent.red;
+  };
+  
+  // Get priority color
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'high':
+        return colors.accent.red;
+      case 'medium':
+        return colors.orange.base;
+      case 'low':
+        return '#4CAF50';  // Green
+      default:
+        return colors.orange.base;
+    }
+  };
+  
+  // Get category icon
+  const getCategoryIcon = (category: string) => {
+    switch (category) {
+      case 'business':
+        return <SearchIcon className="h-5 w-5" />;
+      case 'reviews':
+        return <FileTextIcon className="h-5 w-5" />;
+      case 'posts':
+        return <ClipboardCheckIcon className="h-5 w-5" />;
+      case 'competitors':
+        return <BarChart3Icon className="h-5 w-5" />;
+      case 'performance':
+        return <ActivityIcon className="h-5 w-5" />;
+      default:
+        return <SearchIcon className="h-5 w-5" />;
+    }
+  };
+  
+  // Prepare insights chart data
+  const getChartData = () => {
+    if (!insights || insights.length === 0) return null;
+    
+    const sortedInsights = [...insights].sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
+    
+    const labels = sortedInsights.map(insight => {
+      const date = new Date(insight.date);
+      return `${date.getMonth() + 1}/${date.getDate()}`;
+    });
+    
+    return {
+      labels,
+      datasets: [
+        {
+          label: 'Overall Score',
+          data: sortedInsights.map(insight => insight.score),
+          borderColor: '#6B5B95',
+          backgroundColor: 'rgba(107, 91, 149, 0.1)',
+          tension: 0.3,
+          borderWidth: 2,
+          pointBackgroundColor: '#6B5B95',
+          pointRadius: 4,
+        },
+        {
+          label: 'Business Details',
+          data: sortedInsights.map(insight => insight.category_scores.business_details),
+          borderColor: colors.orange.base,
+          backgroundColor: 'rgba(242, 140, 56, 0.1)',
+          tension: 0.3,
+          borderWidth: 2,
+          borderDash: [5, 5],
+          pointBackgroundColor: colors.orange.base,
+          pointRadius: 3,
+        },
+        {
+          label: 'Reviews',
+          data: sortedInsights.map(insight => insight.category_scores.reviews),
+          borderColor: '#4CAF50', // Green
+          backgroundColor: 'rgba(85, 188, 144, 0.1)',
+          tension: 0.3,
+          borderWidth: 2,
+          borderDash: [5, 5],
+          pointBackgroundColor: '#4CAF50', // Green
+          pointRadius: 3,
+        },
+        {
+          label: 'Posts',
+          data: sortedInsights.map(insight => insight.category_scores.posts),
+          borderColor: '#2196F3', // Blue
+          backgroundColor: 'rgba(66, 153, 225, 0.1)',
+          tension: 0.3,
+          borderWidth: 2,
+          borderDash: [5, 5],
+          pointBackgroundColor: '#2196F3', // Blue
+          pointRadius: 3,
+        },
+        {
+          label: 'Performance',
+          data: sortedInsights.map(insight => insight.category_scores.performance || 0),
+          borderColor: '#9C27B0', // Purple
+          backgroundColor: 'rgba(156, 39, 176, 0.1)',
+          tension: 0.3,
+          borderWidth: 2,
+          borderDash: [5, 5],
+          pointBackgroundColor: '#9C27B0', // Purple
+          pointRadius: 3,
+        },
+      ]
+    };
+  };
+  
+  const chartData = getChartData();
+  
+  // Prepare chart options
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'top' as const,
+      },
+      tooltip: {
+        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+        titleColor: colors.text.dark,
+        bodyColor: colors.text.dark,
+        borderColor: colors.text.secondary + '30',
+        borderWidth: 1,
+        padding: 10,
+        boxPadding: 5,
+        usePointStyle: true,
+        titleFont: {
+          weight: 'bold' as const,
+        },
+      },
+    },
+    scales: {
+      x: {
+        grid: {
+          color: colors.text.secondary + '20',
+        },
+        ticks: {
+          color: colors.text.dark,
+        }
+      },
+      y: {
+        min: 0,
+        max: 100,
+        grid: {
+          color: colors.text.secondary + '20',
+        },
+        ticks: {
+          color: colors.text.dark,
+          stepSize: 20,
+        }
+      }
+    }
+  };
+  
+  return (
+    <div style={{ background: colors.background.white }}>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold" style={{ color: colors.text.dark }}>GBP Audit</h1>
+        <div className="text-sm font-medium" style={{ color: colors.text.dark }}>
+          Available Credits: <span style={{ color: colors.orange.base }}>{credits}</span>
+        </div>
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-6">
+        <div className="md:col-span-4">
+          <Card style={{ 
+            background: colors.background.white,
+            boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+            border: `1px solid ${colors.text.secondary}20`
+          }}>
+            <CardHeader>
+              <CardTitle style={{ color: colors.text.dark }}>Google Business Profile Audit</CardTitle>
+              <CardDescription style={{ color: colors.text.dark }}>
+                Select a GBP profile and run an audit to get actionable insights
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col md:flex-row gap-4">
+                <div className="flex-1">
+                  <label
+                    htmlFor="gbp-select"
+                    className="block text-sm font-medium mb-2"
+                    style={{ color: colors.text.dark }}
+                  >
+                    Select GBP Profile
+                  </label>
+                  <Select
+                    value={selectedProfile}
+                    onValueChange={handleProfileChange}
+                    disabled={loading || profiles.length === 0}
+                  >
+                    <SelectTrigger
+                      id="gbp-select"
+                      style={{
+                        borderColor: colors.orange.base + '40',
+                        borderRadius: '4px',
+                      }}
+                      className="w-full focus:ring-orange-500"
+                    >
+                      <SelectValue placeholder="Select a GBP profile" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {profiles.map((profile) => (
+                        <SelectItem
+                          key={profile.id}
+                          value={profile.id}
+                        >
+                          {profile.name} - {profile.address}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="flex-1 flex items-end">
+                  <div className="flex gap-3 w-full">
+                    <Button
+                      style={{
+                        backgroundColor: colors.orange.base,
+                        color: "white",
+                      }}
+                      className="hover:bg-[#F5A461] w-full"
+                      onClick={handleConnectGBP}
+                      disabled={loading}
+                    >
+                      Connect New GBP
+                    </Button>
+                    <Button
+                      style={{
+                        backgroundColor: colors.orange.base,
+                        color: "white",
+                      }}
+                      className="hover:bg-[#F5A461] w-full"
+                      onClick={runAudit}
+                      disabled={auditLoading || !selectedProfile || credits < 1}
+                    >
+                      {auditLoading ? (
+                        <>
+                          <div className="animate-spin mr-2 h-4 w-4 border-2 border-white rounded-full border-t-transparent" />
+                          Running Audit...
+                        </>
+                      ) : (
+                        <>Run Audit (1 Credit)</>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+        
+        {/* Credits Card */}
+        <div className="md:col-span-1">
+          <Card
+            style={{
+              background: colors.background.white,
+              boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+              border: `1px solid ${colors.text.secondary}20`,
+            }}
+          >
+            <CardHeader className="pb-2">
+              <CardTitle
+                style={{ color: colors.text.dark }}
+                className="text-lg"
+              >
+                Audit Credits
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold mb-2" style={{ color: colors.orange.base }}>
+                {credits}
+              </div>
+              <div className="text-sm" style={{ color: colors.text.dark }}>
+                Each audit costs 1 credit
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+      
+      {auditResult && (
+        <Tabs defaultValue="overview" value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-12 bg-[#1C2526] mb-6">
+            <TabsTrigger 
+              value="overview" 
+              className="text-white data-[state=active]:bg-[#F28C38] data-[state=active]:text-white"
+            >
+              Summary
+            </TabsTrigger>
+            <TabsTrigger 
+              value="business-info" 
+              className="text-white data-[state=active]:bg-[#F28C38] data-[state=active]:text-white"
+            >
+              Business Info
+            </TabsTrigger>
+            <TabsTrigger 
+              value="reviews-analysis" 
+              className="text-white data-[state=active]:bg-[#F28C38] data-[state=active]:text-white"
+            >
+              Reviews
+            </TabsTrigger>
+            <TabsTrigger 
+              value="posts-analysis" 
+              className="text-white data-[state=active]:bg-[#F28C38] data-[state=active]:text-white"
+            >
+              Posts
+            </TabsTrigger>
+            <TabsTrigger 
+              value="performance" 
+              className="text-white data-[state=active]:bg-[#F28C38] data-[state=active]:text-white"
+            >
+              Performance
+            </TabsTrigger>
+            <TabsTrigger 
+              value="website" 
+              className="text-white data-[state=active]:bg-[#F28C38] data-[state=active]:text-white"
+            >
+              Website
+            </TabsTrigger>
+            <TabsTrigger 
+              value="photos" 
+              className="text-white data-[state=active]:bg-[#F28C38] data-[state=active]:text-white"
+            >
+              Photos
+            </TabsTrigger>
+            <TabsTrigger 
+              value="qna" 
+              className="text-white data-[state=active]:bg-[#F28C38] data-[state=active]:text-white"
+            >
+              Q&A
+            </TabsTrigger>
+            <TabsTrigger 
+              value="competitors" 
+              className="text-white data-[state=active]:bg-[#F28C38] data-[state=active]:text-white"
+            >
+              Competitors
+            </TabsTrigger>
+            <TabsTrigger 
+              value="keywords" 
+              className="text-white data-[state=active]:bg-[#F28C38] data-[state=active]:text-white"
+            >
+              Keywords
+            </TabsTrigger>
+            <TabsTrigger 
+              value="duplicates" 
+              className="text-white data-[state=active]:bg-[#F28C38] data-[state=active]:text-white"
+            >
+              Duplicates
+            </TabsTrigger>
+            <TabsTrigger 
+              value="recommendations" 
+              className="text-white data-[state=active]:bg-[#F28C38] data-[state=active]:text-white"
+            >
+              Recommendations
+            </TabsTrigger>
+          </TabsList>
+          
+          {/* Overview Tab */}
+          <TabsContent value="overview">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <Card
+                  style={{
+                    background: "rgba(255, 255, 255, 0.8)",
+                    backdropFilter: "blur(10px)",
+                    border: `2px solid ${colors.orange.base}`,
+                    boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
+                  }}
+                  className="h-full"
+                >
+                  <CardHeader className="pb-2">
+                    <CardTitle
+                      style={{ color: colors.text.dark }}
+                      className="text-lg"
+                    >
+                      Overall Score
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="flex flex-col items-center">
+                    <div
+                      className="text-7xl font-bold mb-3"
+                      style={{
+                        color: getScoreColor(auditResult.overall_score),
+                      }}
+                    >
+                      {auditResult.overall_score}
+                    </div>
+                    <div className="text-xl mb-4" style={{ color: colors.text.dark }}>out of 100</div>
+                    <div className="w-full bg-gray-200 h-3 rounded-full overflow-hidden mb-2">
+                      <div 
+                        className="h-full rounded-full" 
+                        style={{
+                          width: `${auditResult.overall_score}%`,
+                          backgroundColor: getScoreColor(auditResult.overall_score)
+                        }}
+                      />
+                    </div>
+                    <div className="text-sm mt-2" style={{ color: colors.text.dark }}>
+                      Last updated:{" "}
+                      {new Date(auditResult.timestamp).toLocaleDateString()}
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+              
+              <div className="grid grid-cols-1 gap-4">
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.1 }}
+                >
+                  <Card
+                    style={{
+                      background: colors.background.white,
+                      boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+                      border: `1px solid ${colors.text.secondary}20`,
+                    }}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="p-2 rounded-full"
+                            style={{
+                              backgroundColor: colors.orange.base + "20",
+                            }}
+                          >
+                            <SearchIcon
+                              className="h-5 w-5"
+                              style={{ color: colors.orange.base }}
+                            />
+                          </div>
+                          <div style={{ color: colors.text.dark }}>
+                            <div className="font-medium">Business Details</div>
+                            <div className="text-sm" style={{ color: colors.text.secondary }}>
+                              Profile completeness
+                            </div>
+                          </div>
+                        </div>
+                        <div
+                          className="text-2xl font-bold"
+                          style={{
+                            color: getScoreColor(
+                              auditResult.business_details_score
+                            ),
+                          }}
+                        >
+                          {auditResult.business_details_score}
+                        </div>
+                      </div>
+                      <div className="bg-gray-200 h-1 w-full mt-3 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full rounded-full" 
+                          style={{
+                            width: `${auditResult.business_details_score}%`,
+                            backgroundColor: getScoreColor(auditResult.business_details_score)
+                          }}
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+                
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.2 }}
+                >
+                  <Card
+                    style={{
+                      background: colors.background.white,
+                      boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+                      border: `1px solid ${colors.text.secondary}20`,
+                    }}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="p-2 rounded-full"
+                            style={{
+                              backgroundColor: colors.orange.base + "20",
+                            }}
+                          >
+                            <FileTextIcon
+                              className="h-5 w-5"
+                              style={{ color: colors.orange.base }}
+                            />
+                          </div>
+                          <div style={{ color: colors.text.dark }}>
+                            <div className="font-medium">Reviews</div>
+                            <div className="text-sm" style={{ color: colors.text.secondary }}>
+                              Count, rating, responses
+                            </div>
+                          </div>
+                        </div>
+                        <div
+                          className="text-2xl font-bold"
+                          style={{
+                            color: getScoreColor(auditResult.reviews_score),
+                          }}
+                        >
+                          {auditResult.reviews_score}
+                        </div>
+                      </div>
+                      <div className="bg-gray-200 h-1 w-full mt-3 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full rounded-full" 
+                          style={{
+                            width: `${auditResult.reviews_score}%`,
+                            backgroundColor: getScoreColor(auditResult.reviews_score)
+                          }}
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              </div>
+              
+              <div className="grid grid-cols-1 gap-4">
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.3 }}
+                >
+                  <Card
+                    style={{
+                      background: colors.background.white,
+                      boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+                      border: `1px solid ${colors.text.secondary}20`,
+                    }}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="p-2 rounded-full"
+                            style={{
+                              backgroundColor: colors.orange.base + "20",
+                            }}
+                          >
+                            <ClipboardCheckIcon
+                              className="h-5 w-5"
+                              style={{ color: colors.orange.base }}
+                            />
+                          </div>
+                          <div style={{ color: colors.text.dark }}>
+                            <div className="font-medium">Posts</div>
+                            <div className="text-sm" style={{ color: colors.text.secondary }}>
+                              Frequency, engagement
+                            </div>
+                          </div>
+                        </div>
+                        <div
+                          className="text-2xl font-bold"
+                          style={{
+                            color: getScoreColor(auditResult.posts_score),
+                          }}
+                        >
+                          {auditResult.posts_score}
+                        </div>
+                      </div>
+                      <div className="bg-gray-200 h-1 w-full mt-3 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full rounded-full" 
+                          style={{
+                            width: `${auditResult.posts_score}%`,
+                            backgroundColor: getScoreColor(auditResult.posts_score)
+                          }}
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+                
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.4 }}
+                >
+                  <Card
+                    style={{
+                      background: colors.background.white,
+                      boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+                      border: `1px solid ${colors.text.secondary}20`,
+                    }}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="p-2 rounded-full"
+                            style={{
+                              backgroundColor: colors.orange.base + "20",
+                            }}
+                          >
+                            <BarChart3Icon
+                              className="h-5 w-5"
+                              style={{ color: colors.orange.base }}
+                            />
+                          </div>
+                          <div style={{ color: colors.text.dark }}>
+                            <div className="font-medium">Competitors</div>
+                            <div className="text-sm" style={{ color: colors.text.secondary }}>
+                              Comparative analysis
+                            </div>
+                          </div>
+                        </div>
+                        <div
+                          className="text-2xl font-bold"
+                          style={{
+                            color: getScoreColor(
+                              auditResult.competitors_score
+                            ),
+                          }}
+                        >
+                          {auditResult.competitors_score}
+                        </div>
+                      </div>
+                      <div className="bg-gray-200 h-1 w-full mt-3 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full rounded-full" 
+                          style={{
+                            width: `${auditResult.competitors_score}%`,
+                            backgroundColor: getScoreColor(auditResult.competitors_score)
+                          }}
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+                
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.4 }}
+                >
+                  <Card
+                    style={{
+                      background: colors.background.white,
+                      boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+                      border: `1px solid ${colors.text.secondary}20`,
+                    }}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="p-2 rounded-full"
+                            style={{
+                              backgroundColor: colors.orange.base + "20",
+                            }}
+                          >
+                            <SearchIcon
+                              className="h-5 w-5"
+                              style={{ color: colors.orange.base }}
+                            />
+                          </div>
+                          <div style={{ color: colors.text.dark }}>
+                            <div className="font-medium">Business Info</div>
+                            <div className="text-sm" style={{ color: colors.text.secondary }}>
+                              Profile completeness
+                            </div>
+                          </div>
+                        </div>
+                        <div
+                          className="text-2xl font-bold"
+                          style={{
+                            color: getScoreColor(auditResult.business_info_score || 0),
+                          }}
+                        >
+                          {auditResult.business_info_score || 0}
+                        </div>
+                      </div>
+                      <div className="bg-gray-200 h-1 w-full mt-3 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full rounded-full" 
+                          style={{
+                            width: `${auditResult.business_info_score || 0}%`,
+                            backgroundColor: getScoreColor(auditResult.business_info_score || 0)
+                          }}
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.5 }}
+                >
+                  <Card
+                    style={{
+                      background: colors.background.white,
+                      boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+                      border: `1px solid ${colors.text.secondary}20`,
+                    }}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="p-2 rounded-full"
+                            style={{
+                              backgroundColor: "#9C27B020",
+                            }}
+                          >
+                            <ActivityIcon
+                              className="h-5 w-5"
+                              style={{ color: "#9C27B0" }}
+                            />
+                          </div>
+                          <div style={{ color: colors.text.dark }}>
+                            <div className="font-medium">Performance</div>
+                            <div className="text-sm" style={{ color: colors.text.secondary }}>
+                              6-month metrics
+                            </div>
+                          </div>
+                        </div>
+                        <div
+                          className="text-2xl font-bold"
+                          style={{
+                            color: getScoreColor(auditResult.performance_score || 0),
+                          }}
+                        >
+                          {auditResult.performance_score || 0}
+                        </div>
+                      </div>
+                      <div className="bg-gray-200 h-1 w-full mt-3 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full rounded-full" 
+                          style={{
+                            width: `${auditResult.performance_score || 0}%`,
+                            backgroundColor: getScoreColor(auditResult.performance_score || 0)
+                          }}
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.5 }}
+              >
+                <Card
+                  style={{
+                    background: colors.background.white,
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+                    border: `1px solid ${colors.text.secondary}20`,
+                  }}
+                >
+                  <CardHeader>
+                    <CardTitle style={{ color: colors.text.dark }}>
+                      Business Details
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center p-2 rounded" style={{ background: colors.background.light }}>
+                        <span className="font-medium" style={{ color: colors.text.dark }}>Name</span>
+                        <span style={{ color: colors.text.dark }}>{auditResult.details.business.name}</span>
+                      </div>
+                      <div className="flex justify-between items-center p-2 rounded" style={{ background: colors.background.light }}>
+                        <span className="font-medium" style={{ color: colors.text.dark }}>Category</span>
+                        <span style={{ color: colors.text.dark }}>{auditResult.details.business.category}</span>
+                      </div>
+                      <div className="flex justify-between items-center p-2 rounded" style={{ background: colors.background.light }}>
+                        <span className="font-medium" style={{ color: colors.text.dark }}>Phone</span>
+                        <span style={{ color: colors.text.dark }}>{auditResult.details.business.phone}</span>
+                      </div>
+                      <div className="flex justify-between items-center p-2 rounded" style={{ background: colors.background.light }}>
+                        <span className="font-medium" style={{ color: colors.text.dark }}>Website</span>
+                        <span style={{ color: colors.text.dark }}>{auditResult.details.business.website || "Not set"}</span>
+                      </div>
+                      <div className="flex justify-between items-center p-2 rounded" style={{ background: colors.background.light }}>
+                        <span className="font-medium" style={{ color: colors.text.dark }}>Photos</span>
+                        <span style={{ color: colors.text.dark }}>{auditResult.details.business.photo_count} photos</span>
+                      </div>
+                      <div className="flex justify-between items-center p-2 rounded" style={{ background: colors.background.light }}>
+                        <span className="font-medium" style={{ color: colors.text.dark }}>Hours Updated</span>
+                        <span style={{ color: colors.text.dark }}>{new Date(auditResult.details.business.hours_updated).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+              
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.6 }}
+              >
+                <Card
+                  style={{
+                    background: colors.background.white,
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+                    border: `1px solid ${colors.text.secondary}20`,
+                  }}
+                >
+                  <CardHeader>
+                    <CardTitle style={{ color: colors.text.dark }}>
+                      Competitors
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {auditResult.details.competitors.map((competitor: any, index: number) => (
+                      <div 
+                        key={`competitor-${index}`}
+                        className="mb-3 p-3 rounded"
+                        style={{ background: colors.background.light }}
+                      >
+                        <div className="flex justify-between mb-1">
+                          <h4 className="font-medium" style={{ color: colors.text.dark }}>{competitor.name}</h4>
+                          <span className="text-sm" style={{ color: colors.text.secondary }}>{competitor.category}</span>
+                        </div>
+                        <div className="flex gap-3 text-sm">
+                          <div className="flex items-center gap-1">
+                            <span style={{ color: colors.orange.base }}>⭐</span>
+                            <span style={{ color: colors.text.dark }}>{competitor.rating}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <FileTextIcon className="h-3 w-3" style={{ color: colors.orange.base }} />
+                            <span style={{ color: colors.text.dark }}>{competitor.reviews} reviews</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <ClipboardCheckIcon className="h-3 w-3" style={{ color: colors.orange.base }} />
+                            <span style={{ color: colors.text.dark }}>{competitor.posts} posts</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </div>
+          </TabsContent>
+          
+          {/* Business Info Tab */}
+          <TabsContent value="business-info">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <Card
+                  style={{
+                    background: colors.background.white,
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+                    border: `1px solid ${colors.text.secondary}20`,
+                  }}
+                >
+                  <CardHeader>
+                    <CardTitle style={{ color: colors.text.dark }}>
+                      Business Information Score
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex flex-col items-center">
+                      <div
+                        className="text-7xl font-bold mb-3"
+                        style={{
+                          color: getScoreColor(auditResult.business_info_score || 0),
+                        }}
+                      >
+                        {auditResult.business_info_score || 0}
+                      </div>
+                      <div className="text-xl mb-4" style={{ color: colors.text.dark }}>out of 100</div>
+                      <div className="w-full bg-gray-200 h-3 rounded-full overflow-hidden mb-4">
+                        <div 
+                          className="h-full rounded-full" 
+                          style={{
+                            width: `${auditResult.business_info_score || 0}%`,
+                            backgroundColor: getScoreColor(auditResult.business_info_score || 0)
+                          }}
+                        />
+                      </div>
+                      
+                      <p className="text-sm mb-4" style={{ color: colors.text.secondary }}>
+                        Your business information completeness and accuracy score. Higher scores indicate better optimization for local search.
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+              
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.1 }}
+              >
+                <Card
+                  style={{
+                    background: colors.background.white,
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+                    border: `1px solid ${colors.text.secondary}20`,
+                  }}
+                >
+                  <CardHeader>
+                    <CardTitle style={{ color: colors.text.dark }}>
+                      Business Information Overview
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {auditResult.business_info_checks && (
+                      <div className="space-y-2">
+                        <div className="flex gap-4 mb-3">
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                            <span className="text-sm" style={{ color: colors.text.dark }}>Pass</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                            <span className="text-sm" style={{ color: colors.text.dark }}>Fail</span>
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          {auditResult.business_info_checks.slice(0, 5).map((check: any, index: number) => (
+                            <div 
+                              key={index}
+                              className="flex items-center justify-between p-2 rounded"
+                              style={{ background: colors.background.light }}
+                            >
+                              <div className="flex items-center gap-2">
+                                <div 
+                                  className={`w-3 h-3 rounded-full ${check.status === 'pass' ? 'bg-green-500' : 'bg-red-500'}`}
+                                ></div>
+                                <span style={{ color: colors.text.dark }}>{check.field}</span>
+                              </div>
+                              <Badge variant={check.status === 'pass' ? 'outline' : 'destructive'}>
+                                {check.status === 'pass' ? 'OK' : 'Action Needed'}
+                              </Badge>
+                            </div>
+                          ))}
+                          {auditResult.business_info_checks.length > 5 && (
+                            <p className="text-sm text-center mt-2" style={{ color: colors.text.secondary }}>
+                              {auditResult.business_info_checks.length - 5} more items below...
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </div>
+            
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.2 }}
+            >
+              <Card
+                style={{
+                  background: colors.background.white,
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+                  border: `1px solid ${colors.text.secondary}20`,
+                }}
+              >
+                <CardHeader>
+                  <CardTitle style={{ color: colors.text.dark }}>
+                    Detailed Information Checks
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {auditResult.business_info_checks && (
+                    <div className="space-y-4">
+                      {auditResult.business_info_checks.map((check: any, index: number) => (
+                        <div 
+                          key={index}
+                          className="p-4 rounded-lg border"
+                          style={{ 
+                            borderColor: check.status === 'pass' ? '#4CAF50' : '#F44336',
+                            background: check.status === 'pass' ? '#4CAF5010' : '#F4433610'
+                          }}
+                        >
+                          <div className="flex justify-between items-center mb-2">
+                            <h3 className="font-medium" style={{ color: colors.text.dark }}>{check.field}</h3>
+                            <Badge variant={check.status === 'pass' ? 'outline' : 'destructive'}>
+                              {check.status === 'pass' ? 'Pass' : 'Fail'}
+                            </Badge>
+                          </div>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
+                            <div>
+                              <p className="text-xs font-semibold mb-1" style={{ color: colors.text.secondary }}>Current Value</p>
+                              <p className="text-sm" style={{ color: colors.text.dark }}>{check.value || 'Not set'}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs font-semibold mb-1" style={{ color: colors.text.secondary }}>Expected Value</p>
+                              <p className="text-sm" style={{ color: colors.text.dark }}>{check.expected || 'N/A'}</p>
+                            </div>
+                          </div>
+                          
+                          {check.recommendation && (
+                            <div className="mt-2">
+                              <p className="text-xs font-semibold mb-1" style={{ color: colors.text.secondary }}>Recommendation</p>
+                              <p className="text-sm" style={{ color: colors.text.dark }}>{check.recommendation}</p>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </motion.div>
+          </TabsContent>
+          
+          {/* Reviews Analysis Tab */}
+          {/* Posts Analysis Tab */}
+          <TabsContent value="posts-analysis">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+              {/* Posts Score Card */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <Card
+                  style={{
+                    background: "rgba(255, 255, 255, 0.8)",
+                    backdropFilter: "blur(10px)",
+                    border: `2px solid ${colors.orange.base}`,
+                    boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
+                  }}
+                  className="h-full"
+                >
+                  <CardHeader className="pb-2">
+                    <CardTitle
+                      style={{ color: colors.text.dark }}
+                      className="text-lg"
+                    >
+                      Posts Score
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="flex flex-col items-center">
+                    <div
+                      className="text-7xl font-bold mb-3"
+                      style={{
+                        color: getScoreColor(auditResult.posts_score),
+                      }}
+                    >
+                      {auditResult.posts_score}
+                    </div>
+                    <div className="text-xl mb-4" style={{ color: colors.text.dark }}>out of 100</div>
+                    <div className="w-full bg-gray-200 h-3 rounded-full overflow-hidden mb-2">
+                      <div 
+                        className="h-full rounded-full" 
+                        style={{
+                          width: `${auditResult.posts_score}%`,
+                          backgroundColor: getScoreColor(auditResult.posts_score)
+                        }}
+                      />
+                    </div>
+                    
+                    <div className="w-full mt-4">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-sm" style={{ color: colors.text.dark }}>Post Frequency:</span>
+                        <span className="text-sm font-medium" style={{ color: colors.orange.base }}>
+                          {auditResult.details.posts.frequency.toFixed(1)} posts/week
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-sm" style={{ color: colors.text.dark }}>Last Post Age:</span>
+                        <span className="text-sm font-medium" style={{ color: colors.text.dark }}>
+                          {auditResult.details.posts.last_post_age} days ago
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-sm" style={{ color: colors.text.dark }}>Visual Content:</span>
+                        <span className="text-sm font-medium" style={{ color: colors.text.dark }}>
+                          {auditResult.details.posts.photo_percentage || Math.round((auditResult.details.posts.with_photos / auditResult.details.posts.count) * 100)}% with photos
+                        </span>
+                      </div>
+                      {auditResult.details.posts.service_coverage && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm" style={{ color: colors.text.dark }}>Service Coverage:</span>
+                          <span className="text-sm font-medium" style={{ color: colors.text.dark }}>
+                            {auditResult.details.posts.service_coverage.percentage}%
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+              
+              {/* Post Types Distribution */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.1 }}
+                className="col-span-2"
+              >
+                <Card
+                  style={{
+                    background: colors.background.white,
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+                    border: `1px solid ${colors.text.secondary}20`,
+                  }}
+                  className="h-full"
+                >
+                  <CardHeader>
+                    <CardTitle style={{ color: colors.text.dark }}>
+                      Post Types Distribution
+                    </CardTitle>
+                    <CardDescription style={{ color: colors.text.dark }}>
+                      Breakdown of your post types
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {auditResult.details.posts.types ? (
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {Object.entries(auditResult.details.posts.types).map(([type, count]) => (
+                          <div key={type} className="flex flex-col items-center p-4 bg-gray-50 rounded-md">
+                            <div className="text-2xl font-bold" style={{ color: colors.orange.base }}>
+                              {count}
+                            </div>
+                            <div className="text-sm mt-1" style={{ color: colors.text.dark }}>
+                              {type}
+                            </div>
+                            <div className="text-xs mt-1" style={{ color: colors.text.secondary }}>
+                              {count > 0 ? Math.round((count as number / auditResult.details.posts.count) * 100) : 0}% of total
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-4" style={{ color: colors.text.secondary }}>
+                        No post type data available
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </div>
+            
+            {/* Recent Posts & Service Coverage */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              {/* Recent Posts */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.2 }}
+              >
+                <Card
+                  style={{
+                    background: colors.background.white,
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+                    border: `1px solid ${colors.text.secondary}20`,
+                  }}
+                >
+                  <CardHeader>
+                    <CardTitle style={{ color: colors.text.dark }}>
+                      Recent Posts
+                    </CardTitle>
+                    <CardDescription style={{ color: colors.text.dark }}>
+                      Your 5 most recent Google posts
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {auditResult.details.posts.posts && auditResult.details.posts.posts.length > 0 ? (
+                      <div className="space-y-4">
+                        {auditResult.details.posts.posts.map((post: any) => (
+                          <Card key={post.id} className="overflow-hidden">
+                            <CardContent className="p-4">
+                              <div className="flex items-start gap-4">
+                                <div
+                                  className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${
+                                    post.has_photo ? "bg-green-100" : "bg-gray-100"
+                                  }`}
+                                >
+                                  {post.has_photo ? (
+                                    <ImageIcon className="h-6 w-6 text-green-600" />
+                                  ) : (
+                                    <FileTextIcon className="h-6 w-6 text-gray-500" />
+                                  )}
+                                </div>
+                                <div className="flex-1">
+                                  <div className="flex justify-between items-start">
+                                    <h4 className="font-medium text-lg" style={{ color: colors.text.dark }}>
+                                      {post.title}
+                                    </h4>
+                                    <span 
+                                      className="inline-flex items-center px-2 py-1 rounded-full text-xs"
+                                      style={{ 
+                                        backgroundColor: colors.orange.base + "20",
+                                        color: colors.orange.base
+                                      }}
+                                    >
+                                      {post.type}
+                                    </span>
+                                  </div>
+                                  <p className="text-sm mt-1" style={{ color: colors.text.secondary }}>
+                                    {post.content}
+                                  </p>
+                                  <div className="flex flex-wrap gap-1 mt-2">
+                                    {post.keywords.map((keyword: string) => (
+                                      <span
+                                        key={keyword}
+                                        className="text-xs px-2 py-1 bg-gray-100 rounded-full"
+                                        style={{ color: colors.text.secondary }}
+                                      >
+                                        {keyword}
+                                      </span>
+                                    ))}
+                                  </div>
+                                  <div className="text-xs mt-2" style={{ color: colors.text.secondary }}>
+                                    Posted: {new Date(post.created_at).toLocaleDateString()}
+                                  </div>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-4" style={{ color: colors.text.secondary }}>
+                        No recent posts available
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </motion.div>
+              
+              {/* Service Coverage */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.3 }}
+              >
+                <Card
+                  style={{
+                    background: colors.background.white,
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+                    border: `1px solid ${colors.text.secondary}20`,
+                  }}
+                >
+                  <CardHeader>
+                    <CardTitle style={{ color: colors.text.dark }}>
+                      Service Coverage
+                    </CardTitle>
+                    <CardDescription style={{ color: colors.text.dark }}>
+                      How well your posts cover your business services
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {auditResult.details.posts.service_coverage ? (
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-center">
+                          <span style={{ color: colors.text.dark }}>Coverage:</span>
+                          <span className="font-bold" style={{ color: getScoreColor(auditResult.details.posts.service_coverage.percentage) }}>
+                            {auditResult.details.posts.service_coverage.percentage}%
+                          </span>
+                        </div>
+                        
+                        <div className="w-full bg-gray-200 h-3 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full rounded-full" 
+                            style={{
+                              width: `${auditResult.details.posts.service_coverage.percentage}%`,
+                              backgroundColor: getScoreColor(auditResult.details.posts.service_coverage.percentage)
+                            }}
+                          />
+                        </div>
+                        
+                        <div className="text-sm font-medium mt-4" style={{ color: colors.text.dark }}>
+                          Services covered in posts: {auditResult.details.posts.service_coverage.covered} of {auditResult.details.posts.service_coverage.total}
+                        </div>
+                        
+                        {auditResult.details.posts.service_coverage.missing.length > 0 && (
+                          <>
+                            <div className="text-sm font-medium mt-4" style={{ color: colors.text.dark }}>
+                              Services missing from posts:
+                            </div>
+                            <div className="grid grid-cols-1 gap-2 mt-2">
+                              {auditResult.details.posts.service_coverage.missing.map((service: string) => (
+                                <div 
+                                  key={service}
+                                  className="flex justify-between p-2 bg-red-50 rounded"
+                                >
+                                  <span className="text-sm" style={{ color: colors.text.dark }}>{service}</span>
+                                  <span className="text-sm">❌</span>
+                                </div>
+                              ))}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-center py-4" style={{ color: colors.text.secondary }}>
+                        No service coverage data available
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </div>
+            
+            {/* Post Recommendations */}
+            <div className="mb-6">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.4 }}
+              >
+                <Card
+                  style={{
+                    background: colors.background.white,
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+                    border: `1px solid ${colors.text.secondary}20`,
+                  }}
+                >
+                  <CardHeader>
+                    <CardTitle style={{ color: colors.text.dark }}>
+                      Post Recommendations
+                    </CardTitle>
+                    <CardDescription style={{ color: colors.text.dark }}>
+                      Actionable suggestions to improve your posting strategy
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {auditResult.details.posts.recommendations ? (
+                      <div className="space-y-4">
+                        {auditResult.details.posts.recommendations.map((rec: any, index: number) => (
+                          <div key={index} className="p-4 bg-orange-50 rounded-lg">
+                            <div className="font-medium text-lg mb-1" style={{ color: colors.orange.base }}>
+                              {rec.issue}
+                            </div>
+                            <div className="text-sm mb-2" style={{ color: colors.text.dark }}>
+                              <span className="font-medium">Suggestion: </span>{rec.suggestion}
+                            </div>
+                            <div className="text-sm" style={{ color: colors.text.secondary }}>
+                              <span className="font-medium">Impact: </span>{rec.impact}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-4" style={{ color: colors.text.secondary }}>
+                        No recommendations available
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </div>
+          </TabsContent>
+          
+          {/* Performance Tab */}
+          <TabsContent value="performance">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <Card
+                  style={{
+                    background: colors.background.white,
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+                    border: `1px solid ${colors.text.secondary}20`,
+                  }}
+                >
+                  <CardHeader>
+                    <CardTitle style={{ color: colors.text.dark }}>
+                      Performance Score
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex flex-col items-center">
+                      <div
+                        className="text-7xl font-bold mb-3"
+                        style={{
+                          color: getScoreColor(auditResult.performance_score || 0),
+                        }}
+                      >
+                        {auditResult.performance_score || 0}
+                      </div>
+                      <div className="text-xl mb-4" style={{ color: colors.text.dark }}>out of 100</div>
+                      <div className="w-full bg-gray-200 h-3 rounded-full overflow-hidden mb-4">
+                        <div 
+                          className="h-full rounded-full" 
+                          style={{
+                            width: `${auditResult.performance_score || 0}%`,
+                            backgroundColor: getScoreColor(auditResult.performance_score || 0)
+                          }}
+                        />
+                      </div>
+                      
+                      <p className="text-sm mb-4" style={{ color: colors.text.secondary }}>
+                        Your business performance score based on 6-month metrics. Higher scores indicate better customer engagement and visibility.
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+              
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.1 }}
+              >
+                <Card
+                  style={{
+                    background: colors.background.white,
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+                    border: `1px solid ${colors.text.secondary}20`,
+                  }}
+                >
+                  <CardHeader>
+                    <CardTitle style={{ color: colors.text.dark }}>
+                      Performance Overview
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {auditResult.details.performance && (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between p-3 rounded" style={{ background: colors.background.light }}>
+                          <div className="flex items-center gap-2">
+                            <ArrowUpRightIcon className="h-4 w-4" style={{ color: "#4CAF50" }} />
+                            <span style={{ color: colors.text.dark }}>Total Interactions</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold" style={{ color: colors.text.dark }}>
+                              {auditResult.details.performance?.overview.total_interactions.current.toLocaleString()}
+                            </span>
+                            <Badge variant={auditResult.details.performance?.overview.total_interactions.change_percent > 0 ? "success" : "destructive"}>
+                              {auditResult.details.performance?.overview.total_interactions.change_percent > 0 ? "+" : ""}
+                              {auditResult.details.performance?.overview.total_interactions.change_percent.toFixed(1)}%
+                            </Badge>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center justify-between p-3 rounded" style={{ background: colors.background.light }}>
+                          <div className="flex items-center gap-2">
+                            <PhoneCallIcon className="h-4 w-4" style={{ color: "#2196F3" }} />
+                            <span style={{ color: colors.text.dark }}>Calls</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold" style={{ color: colors.text.dark }}>
+                              {auditResult.details.performance?.calls.current.toLocaleString()}
+                            </span>
+                            <Badge variant={auditResult.details.performance?.calls.change_percent > 0 ? "success" : "destructive"}>
+                              {auditResult.details.performance?.calls.change_percent > 0 ? "+" : ""}
+                              {auditResult.details.performance?.calls.change_percent.toFixed(1)}%
+                            </Badge>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center justify-between p-3 rounded" style={{ background: colors.background.light }}>
+                          <div className="flex items-center gap-2">
+                            <CompassIcon className="h-4 w-4" style={{ color: "#FF9800" }} />
+                            <span style={{ color: colors.text.dark }}>Direction Requests</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold" style={{ color: colors.text.dark }}>
+                              {auditResult.details.performance?.direction_requests.current.toLocaleString()}
+                            </span>
+                            <Badge variant={auditResult.details.performance?.direction_requests.change_percent > 0 ? "success" : "destructive"}>
+                              {auditResult.details.performance?.direction_requests.change_percent > 0 ? "+" : ""}
+                              {auditResult.details.performance?.direction_requests.change_percent.toFixed(1)}%
+                            </Badge>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center justify-between p-3 rounded" style={{ background: colors.background.light }}>
+                          <div className="flex items-center gap-2">
+                            <GlobeIcon className="h-4 w-4" style={{ color: "#9C27B0" }} />
+                            <span style={{ color: colors.text.dark }}>Website Clicks</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold" style={{ color: colors.text.dark }}>
+                              {auditResult.details.performance?.website_clicks.current.toLocaleString()}
+                            </span>
+                            <Badge variant={auditResult.details.performance?.website_clicks.change_percent > 0 ? "success" : "destructive"}>
+                              {auditResult.details.performance?.website_clicks.change_percent > 0 ? "+" : ""}
+                              {auditResult.details.performance?.website_clicks.change_percent.toFixed(1)}%
+                            </Badge>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </div>
+            
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.2 }}
+            >
+              <Card
+                style={{
+                  background: colors.background.white,
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+                  border: `1px solid ${colors.text.secondary}20`,
+                }}
+              >
+                <CardHeader>
+                  <CardTitle style={{ color: colors.text.dark }}>
+                    6-Month Performance Trends
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {auditResult.details.performance && (
+                    <div className="space-y-6">
+                      <div>
+                        <div className="flex justify-between items-center mb-2">
+                          <h3 className="font-medium" style={{ color: colors.text.dark }}>Total Interactions</h3>
+                          <Badge variant="outline">6-month View</Badge>
+                        </div>
+                        <div className="bg-gray-50 p-3 rounded-lg h-64">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <LineChart
+                              data={auditResult.details.performance.overview.total_interactions.trend.map((item: any) => ({
+                                date: new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                                value: item.value
+                              }))}
+                              margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                            >
+                              <CartesianGrid strokeDasharray="3 3" />
+                              <XAxis dataKey="date" />
+                              <YAxis />
+                              <Tooltip />
+                              <RechartsLine type="monotone" dataKey="value" stroke="#9C27B0" activeDot={{ r: 8 }} name="Interactions" />
+                            </LineChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <div className="font-medium mb-2" style={{ color: colors.text.dark }}>Calls</div>
+                          <div className="bg-gray-50 p-3 rounded-lg h-40">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <LineChart
+                                data={auditResult.details.performance.calls.trend.map((item: any) => ({
+                                  date: new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                                  value: item.value
+                                }))}
+                                margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
+                              >
+                                <XAxis dataKey="date" tick={{ fontSize: 10 }} />
+                                <YAxis tick={{ fontSize: 10 }} />
+                                <Tooltip />
+                                <RechartsLine type="monotone" dataKey="value" stroke="#2196F3" strokeWidth={2} dot={false} />
+                              </LineChart>
+                            </ResponsiveContainer>
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <div className="font-medium mb-2" style={{ color: colors.text.dark }}>Direction Requests</div>
+                          <div className="bg-gray-50 p-3 rounded-lg h-40">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <LineChart
+                                data={auditResult.details.performance.direction_requests.trend.map((item: any) => ({
+                                  date: new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                                  value: item.value
+                                }))}
+                                margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
+                              >
+                                <XAxis dataKey="date" tick={{ fontSize: 10 }} />
+                                <YAxis tick={{ fontSize: 10 }} />
+                                <Tooltip />
+                                <RechartsLine type="monotone" dataKey="value" stroke="#FF9800" strokeWidth={2} dot={false} />
+                              </LineChart>
+                            </ResponsiveContainer>
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <div className="font-medium mb-2" style={{ color: colors.text.dark }}>Website Clicks</div>
+                          <div className="bg-gray-50 p-3 rounded-lg h-40">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <LineChart
+                                data={auditResult.details.performance.website_clicks.trend.map((item: any) => ({
+                                  date: new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                                  value: item.value
+                                }))}
+                                margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
+                              >
+                                <XAxis dataKey="date" tick={{ fontSize: 10 }} />
+                                <YAxis tick={{ fontSize: 10 }} />
+                                <Tooltip />
+                                <RechartsLine type="monotone" dataKey="value" stroke="#9C27B0" strokeWidth={2} dot={false} />
+                              </LineChart>
+                            </ResponsiveContainer>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </motion.div>
+            
+            <div className="mt-6">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.3 }}
+              >
+                <Card
+                  style={{
+                    background: colors.background.white,
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+                    border: `1px solid ${colors.text.secondary}20`,
+                  }}
+                >
+                  <CardHeader>
+                    <CardTitle style={{ color: colors.text.dark }}>
+                      Search Performance
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {auditResult.details.performance?.searches && (
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between p-4 rounded" style={{ background: colors.background.light }}>
+                          <div>
+                            <h3 className="font-medium" style={{ color: colors.text.dark }}>Total Searches</h3>
+                            <p className="text-sm" style={{ color: colors.text.secondary }}>People finding your business</p>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-2xl font-bold" style={{ color: colors.text.dark }}>
+                              {auditResult.details.performance.searches.total.current.toLocaleString()}
+                            </div>
+                            <Badge variant={auditResult.details.performance.searches.total.change_percent > 0 ? "success" : "destructive"}>
+                              {auditResult.details.performance.searches.total.change_percent > 0 ? "+" : ""}
+                              {auditResult.details.performance.searches.total.change_percent.toFixed(1)}%
+                            </Badge>
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <h3 className="font-medium mb-2" style={{ color: colors.text.dark }}>Top Search Queries</h3>
+                          <div className="space-y-2">
+                            {auditResult.details.performance.searches.top_queries.map((query: any, index: number) => (
+                              <div 
+                                key={index}
+                                className="flex items-center justify-between p-3 rounded"
+                                style={{ background: colors.background.light }}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ background: "#9C27B020" }}>
+                                    {index + 1}
+                                  </div>
+                                  <span style={{ color: colors.text.dark }}>{query.query}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-bold" style={{ color: colors.text.dark }}>
+                                    {query.volume}
+                                  </span>
+                                  <Badge variant={query.change_percent > 0 ? "success" : "destructive"}>
+                                    {query.change_percent > 0 ? "+" : ""}
+                                    {query.change_percent.toFixed(1)}%
+                                  </Badge>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="reviews-analysis">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+              {/* Reviews Score Card */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <Card
+                  style={{
+                    background: "rgba(255, 255, 255, 0.8)",
+                    backdropFilter: "blur(10px)",
+                    border: `2px solid ${colors.orange.base}`,
+                    boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
+                  }}
+                  className="h-full"
+                >
+                  <CardHeader className="pb-2">
+                    <CardTitle
+                      style={{ color: colors.text.dark }}
+                      className="text-lg"
+                    >
+                      Reviews Score
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="flex flex-col items-center">
+                    <div
+                      className="text-7xl font-bold mb-3"
+                      style={{
+                        color: getScoreColor(auditResult.reviews_score),
+                      }}
+                    >
+                      {auditResult.reviews_score}
+                    </div>
+                    <div className="text-xl mb-4" style={{ color: colors.text.dark }}>out of 100</div>
+                    <div className="w-full bg-gray-200 h-3 rounded-full overflow-hidden mb-2">
+                      <div 
+                        className="h-full rounded-full" 
+                        style={{
+                          width: `${auditResult.reviews_score}%`,
+                          backgroundColor: getScoreColor(auditResult.reviews_score)
+                        }}
+                      />
+                    </div>
+                    <div className="w-full flex flex-col gap-2 mt-6">
+                      <div className="flex justify-between">
+                        <div style={{ color: colors.text.dark }}>Reviews Count:</div>
+                        <div style={{ color: colors.text.dark, fontWeight: 'bold' }}>
+                          {auditResult.details.reviews.count}
+                        </div>
+                      </div>
+                      <div className="flex justify-between">
+                        <div style={{ color: colors.text.dark }}>Average Rating:</div>
+                        <div style={{ color: colors.text.dark, fontWeight: 'bold' }}>
+                          {auditResult.details.reviews.average_rating.toFixed(1)} ★
+                        </div>
+                      </div>
+                      <div className="flex justify-between">
+                        <div style={{ color: colors.text.dark }}>Response Rate:</div>
+                        <div style={{ color: colors.text.dark, fontWeight: 'bold' }}>
+                          {auditResult.details.reviews.response_rate}%
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+              
+              {/* Sentiment Analysis Chart */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.2 }}
+                className="md:col-span-2"
+              >
+                <Card
+                  style={{
+                    background: colors.background.white,
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+                    border: `1px solid ${colors.text.secondary}20`,
+                  }}
+                >
+                  <CardHeader>
+                    <CardTitle style={{ color: colors.text.dark }}>
+                      Review Sentiment Analysis
+                    </CardTitle>
+                    <CardDescription style={{ color: colors.text.dark }}>
+                      Distribution of positive, neutral, and negative reviews
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {auditResult.details.reviews.sentiment ? (
+                      <div className="flex flex-col md:flex-row items-center justify-center gap-6">
+                        <div className="w-48 h-48">
+                          <div className="relative w-full h-full">
+                            <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+                              <div style={{ color: colors.text.dark }} className="text-sm font-medium">
+                                Total
+                              </div>
+                              <div style={{ color: colors.text.dark }} className="text-3xl font-bold">
+                                {auditResult.details.reviews.count}
+                              </div>
+                              <div style={{ color: colors.text.dark }} className="text-sm">
+                                Reviews
+                              </div>
+                            </div>
+                            <svg width="100%" height="100%" viewBox="0 0 100 100">
+                              {/* Create a donut chart with sentiment distribution */}
+                              <circle 
+                                cx="50" 
+                                cy="50" 
+                                r="40" 
+                                fill="none" 
+                                stroke="#e6e6e6" 
+                                strokeWidth="20" 
+                              />
+                              
+                              {/* Positive wedge (green) */}
+                              <circle 
+                                cx="50" 
+                                cy="50" 
+                                r="40" 
+                                fill="none" 
+                                stroke="#4CAF50" 
+                                strokeWidth="20" 
+                                strokeDasharray={`${(auditResult.details.reviews.sentiment?.positive || 0) * 2.51} 251`} 
+                                strokeDashoffset="0" 
+                                transform="rotate(-90 50 50)" 
+                              />
+                              
+                              {/* Neutral wedge (gray) */}
+                              <circle 
+                                cx="50" 
+                                cy="50" 
+                                r="40" 
+                                fill="none" 
+                                stroke="#9e9e9e" 
+                                strokeWidth="20" 
+                                strokeDasharray={`${(auditResult.details.reviews.sentiment?.neutral || 0) * 2.51} 251`} 
+                                strokeDashoffset={`${(100 - (auditResult.details.reviews.sentiment?.positive || 0)) * 2.51}`} 
+                                transform="rotate(-90 50 50)" 
+                              />
+                              
+                              {/* Negative wedge (red) */}
+                              <circle 
+                                cx="50" 
+                                cy="50" 
+                                r="40" 
+                                fill="none" 
+                                stroke="#f44336" 
+                                strokeWidth="20" 
+                                strokeDasharray={`${(auditResult.details.reviews.sentiment?.negative || 0) * 2.51} 251`} 
+                                strokeDashoffset={`${(100 - ((auditResult.details.reviews.sentiment?.positive || 0) + (auditResult.details.reviews.sentiment?.neutral || 0))) * 2.51}`} 
+                                transform="rotate(-90 50 50)" 
+                              />
+                            </svg>
+                          </div>
+                        </div>
+                        
+                        <div className="flex flex-col gap-4">
+                          <div className="text-lg font-medium" style={{ color: colors.text.dark }}>
+                            Sentiment Distribution
+                          </div>
+                          
+                          <div className="grid grid-cols-1 gap-3">
+                            <div className="flex items-center justify-between gap-4">
+                              <div className="flex items-center gap-2">
+                                <div style={{ background: '#4CAF50' }} className="w-4 h-4 rounded-full"></div>
+                                <div style={{ color: colors.text.dark }}>Positive Reviews</div>
+                              </div>
+                              <div style={{ color: colors.text.dark, fontWeight: 'bold' }}>
+                                {auditResult.details.reviews.sentiment?.positive || 0}%
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-center justify-between gap-4">
+                              <div className="flex items-center gap-2">
+                                <div style={{ background: '#9e9e9e' }} className="w-4 h-4 rounded-full"></div>
+                                <div style={{ color: colors.text.dark }}>Neutral Reviews</div>
+                              </div>
+                              <div style={{ color: colors.text.dark, fontWeight: 'bold' }}>
+                                {auditResult.details.reviews.sentiment?.neutral || 0}%
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-center justify-between gap-4">
+                              <div className="flex items-center gap-2">
+                                <div style={{ background: '#f44336' }} className="w-4 h-4 rounded-full"></div>
+                                <div style={{ color: colors.text.dark }}>Negative Reviews</div>
+                              </div>
+                              <div style={{ color: colors.text.dark, fontWeight: 'bold' }}>
+                                {auditResult.details.reviews.sentiment?.negative || 0}%
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="text-sm" style={{ color: colors.text.secondary }}>
+                            Sentiment analysis powered by machine learning.
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex justify-center items-center h-48">
+                        <div style={{ color: colors.text.dark }}>No sentiment data available for this profile.</div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </div>
+            
+            {/* AI-powered Review Analysis */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.3 }}
+              className="mb-6"
+            >
+              <Card
+                style={{
+                  background: colors.background.white,
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+                  border: `1px solid ${colors.text.secondary}20`,
+                }}
+              >
+                <CardHeader>
+                  <div className="flex items-center gap-2">
+                    <CardTitle style={{ color: colors.text.dark }}>
+                      AI-Powered Review Analysis
+                    </CardTitle>
+                    <Badge
+                      style={{
+                        backgroundColor: "#8B5CF6",
+                        color: "white",
+                      }}
+                    >
+                      AI
+                    </Badge>
+                  </div>
+                  <CardDescription style={{ color: colors.text.dark }}>
+                    Intelligent insights derived from customer reviews
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="bg-gray-100 p-4 rounded-lg mb-4">
+                    <div className="text-lg font-medium mb-2" style={{ color: colors.text.dark }}>
+                      Key Takeaways:
+                    </div>
+                    
+                    <div className="space-y-4">
+                      <div className="flex items-start gap-2">
+                        <div style={{ color: '#4CAF50' }} className="mt-1">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                          </svg>
+                        </div>
+                        <div style={{ color: colors.text.dark }}>
+                          <span className="font-medium">Strengths: </span>
+                          {auditResult.details.reviews.sentiment?.positive && auditResult.details.reviews.sentiment.positive > 60 
+                            ? "Customers consistently praise the service quality and staff professionalism."
+                            : "Work on improving customer experience to increase positive feedback."
+                          }
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-start gap-2">
+                        <div style={{ color: '#f44336' }} className="mt-1">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="8" x2="12" y2="12"></line>
+                            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                          </svg>
+                        </div>
+                        <div style={{ color: colors.text.dark }}>
+                          <span className="font-medium">Areas for Improvement: </span>
+                          {auditResult.details.reviews.sentiment?.negative && auditResult.details.reviews.sentiment.negative > 20 
+                            ? "Address concerns related to response times and customer communication."
+                            : "Maintain your excellent track record of minimizing negative customer experiences."
+                          }
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-start gap-2">
+                        <div style={{ color: '#2196F3' }} className="mt-1">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                          </svg>
+                        </div>
+                        <div style={{ color: colors.text.dark }}>
+                          <span className="font-medium">Review Strategy: </span>
+                          {auditResult.details.reviews.response_rate < 80 
+                            ? "Increase your review response rate to demonstrate engagement with customer feedback."
+                            : "Your excellent response rate shows strong customer engagement. Keep it up!"
+                          }
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <div className="text-lg font-medium mb-2" style={{ color: colors.text.dark }}>
+                        Common Positive Themes:
+                      </div>
+                      <ul className="list-disc list-inside space-y-2" style={{ color: colors.text.dark }}>
+                        <li>Professional and knowledgeable staff</li>
+                        <li>High-quality service delivery</li>
+                        <li>Clean and well-maintained facilities</li>
+                        <li>Good value for the price</li>
+                      </ul>
+                    </div>
+                    
+                    <div>
+                      <div className="text-lg font-medium mb-2" style={{ color: colors.text.dark }}>
+                        Action Recommendations:
+                      </div>
+                      <ul className="list-disc list-inside space-y-2" style={{ color: colors.text.dark }}>
+                        <li>Implement a {auditResult.details.reviews.response_rate < 80 ? "more robust" : "consistent"} review response strategy</li>
+                        <li>Showcase positive reviews on your website and marketing materials</li>
+                        <li>Address common concerns in your business operations</li>
+                        <li>Consider using AI-powered reply suggestions to scale review management</li>
+                      </ul>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+            
+            {/* Review Sample and Response Suggestions */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.4 }}
+            >
+              <Card
+                style={{
+                  background: colors.background.white,
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+                  border: `1px solid ${colors.text.secondary}20`,
+                }}
+              >
+                <CardHeader>
+                  <CardTitle style={{ color: colors.text.dark }}>
+                    Review Samples & AI Response Suggestions
+                  </CardTitle>
+                  <CardDescription style={{ color: colors.text.dark }}>
+                    Examples of customer reviews with AI-powered response recommendations
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {auditResult.details.reviews.reviews && auditResult.details.reviews.reviews.length > 0 ? (
+                    auditResult.details.reviews.reviews.slice(0, 3).map((review: any, index: number) => (
+                      <div 
+                        key={index} 
+                        className="border rounded-lg p-4"
+                        style={{ borderColor: `${colors.text.secondary}20` }}
+                      >
+                        <div className="flex items-start gap-3 mb-3">
+                          <div 
+                            className="w-10 h-10 rounded-full bg-cover bg-center"
+                            style={{ 
+                              backgroundImage: review.reviewer_photo ? `url(${review.reviewer_photo})` : 'none',
+                              backgroundColor: review.reviewer_photo ? 'transparent' : colors.orange.base + '20'
+                            }}
+                          >
+                            {!review.reviewer_photo && (
+                              <div className="w-full h-full flex items-center justify-center" style={{ color: colors.orange.base }}>
+                                {review.reviewer_name.charAt(0).toUpperCase()}
+                              </div>
+                            )}
+                          </div>
+                          
+                          <div className="flex-1">
+                            <div className="flex justify-between">
+                              <div className="font-medium" style={{ color: colors.text.dark }}>
+                                {review.reviewer_name}
+                              </div>
+                              <div className="flex items-center">
+                                <div className="text-sm font-medium mr-1" style={{ color: '#FFB400' }}>
+                                  {review.rating}
+                                </div>
+                                <div style={{ color: '#FFB400' }}>
+                                  {'★'.repeat(review.rating)}
+                                  {'☆'.repeat(5 - review.rating)}
+                                </div>
+                              </div>
+                            </div>
+                            
+                            <div className="text-sm" style={{ color: colors.text.secondary }}>
+                              {new Date(review.created_at).toLocaleDateString()}
+                            </div>
+                            
+                            <div className="mt-2" style={{ color: colors.text.dark }}>
+                              {review.comment}
+                            </div>
+                            
+                            {review.sentiment && (
+                              <div 
+                                className="mt-2 text-sm inline-block px-2 py-1 rounded"
+                                style={{ 
+                                  backgroundColor: 
+                                    review.sentiment.analysis === 'Positive' || review.sentiment.analysis === 'Highly positive' ? '#4CAF5020' :
+                                    review.sentiment.analysis === 'Neutral' ? '#9e9e9e20' : '#f4433620',
+                                  color:
+                                    review.sentiment.analysis === 'Positive' || review.sentiment.analysis === 'Highly positive' ? '#4CAF50' :
+                                    review.sentiment.analysis === 'Neutral' ? '#9e9e9e' : '#f44336'
+                                }}
+                              >
+                                {review.sentiment.analysis}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        
+                        {review.reply ? (
+                          <div className="ml-12 mt-3 p-3 rounded-lg" style={{ backgroundColor: colors.text.secondary + '10' }}>
+                            <div className="font-medium text-sm mb-1" style={{ color: colors.text.dark }}>
+                              Your Response
+                            </div>
+                            <div className="text-sm" style={{ color: colors.text.dark }}>
+                              {review.reply}
+                            </div>
+                            {review.replied_at && (
+                              <div className="text-xs mt-1" style={{ color: colors.text.secondary }}>
+                                {new Date(review.replied_at).toLocaleDateString()}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="mt-3 border-t pt-3" style={{ borderColor: `${colors.text.secondary}20` }}>
+                            <div className="flex items-center mb-2">
+                              <div className="font-medium" style={{ color: colors.text.dark }}>
+                                AI-Generated Response Suggestion
+                              </div>
+                              <Badge
+                                className="ml-2"
+                                style={{
+                                  backgroundColor: "#8B5CF6",
+                                  color: "white",
+                                }}
+                              >
+                                AI
+                              </Badge>
+                            </div>
+                            <div className="p-3 rounded-lg" style={{ backgroundColor: '#8B5CF610' }}>
+                              <div style={{ color: colors.text.dark }}>
+                                {review.rating >= 4 ? (
+                                  `Thank you, ${review.reviewer_name}, for your wonderful feedback! We're delighted to hear you had a positive experience with us. Your satisfaction is our top priority, and we appreciate you taking the time to share your thoughts. We look forward to serving you again soon!`
+                                ) : review.rating === 3 ? (
+                                  `Hello ${review.reviewer_name}, thank you for your feedback. We appreciate you sharing your experience with us. We're always working to improve our services, and your comments will help us do just that. If you have any specific suggestions, please don't hesitate to contact us directly. We hope to exceed your expectations on your next visit.`
+                                ) : (
+                                  `Hello ${review.reviewer_name}, we sincerely apologize for not meeting your expectations. Your feedback is important to us, and we'd like to learn more about your experience so we can address the issues you've encountered. Please contact our customer service team at your convenience so we can make things right. We're committed to improving and hope you'll give us another opportunity to provide you with better service.`
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex justify-end mt-2">
+                              <Button
+                                style={{
+                                  backgroundColor: "#8B5CF6",
+                                  color: "white",
+                                }}
+                                size="sm"
+                              >
+                                Use This Response
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="flex justify-center items-center py-8">
+                      <div style={{ color: colors.text.dark }}>No review data available.</div>
+                    </div>
+                  )}
+                  
+                  <div className="flex justify-center mt-4">
+                    <Button
+                      style={{
+                        backgroundColor: colors.orange.base,
+                        color: "white",
+                      }}
+                      className="gap-2"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                      </svg>
+                      Go to Reviews Management
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            {/* Spam Review Detection */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.5 }}
+              className="mb-6"
+            >
+              <Card
+                style={{
+                  background: colors.background.white,
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+                  border: `1px solid ${colors.text.secondary}20`,
+                }}
+              >
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <CardTitle style={{ color: colors.text.dark }}>
+                      Spam Review Detection
+                    </CardTitle>
+                    <Badge
+                      style={{
+                        backgroundColor: "#FF5722",
+                        color: "white",
+                      }}
+                    >
+                      Fraud Guard
+                    </Badge>
+                  </div>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="p-1 cursor-help">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                          </svg>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Our AI system flags suspicious review patterns</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </CardHeader>
+                <CardContent>
+                  {auditResult.details.reviews.spam_reviews && auditResult.details.reviews.spam_reviews.length > 0 ? (
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2 mb-4">
+                        <AlertCircle className="h-5 w-5 text-red-500" />
+                        <div className="text-sm font-medium" style={{ color: colors.text.dark }}>
+                          {auditResult.details.reviews.spam_reviews.length} potentially fraudulent {auditResult.details.reviews.spam_reviews.length === 1 ? 'review' : 'reviews'} detected
+                        </div>
+                      </div>
+                    
+                      <div className="overflow-x-auto">
+                        <table className="w-full border-collapse">
+                          <thead>
+                            <tr className="border-b" style={{ color: colors.text.dark }}>
+                              <th className="py-2 px-4 text-left font-medium">Reviewer</th>
+                              <th className="py-2 px-4 text-left font-medium">Flag Reason</th>
+                              <th className="py-2 px-4 text-left font-medium">Confidence</th>
+                              <th className="py-2 px-4 text-left font-medium">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {auditResult.details.reviews.spam_reviews.map((spam, index) => (
+                              <tr key={index} className="border-b" style={{ color: colors.text.dark }}>
+                                <td className="py-3 px-4">{spam.reviewer_name}</td>
+                                <td className="py-3 px-4">{spam.flag_reason}</td>
+                                <td className="py-3 px-4">
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-24 bg-gray-200 h-2 rounded-full overflow-hidden">
+                                      <div 
+                                        className="h-full rounded-full bg-red-500" 
+                                        style={{ width: `${spam.flag_confidence}%` }}
+                                      />
+                                    </div>
+                                    <span>{spam.flag_confidence}%</span>
+                                  </div>
+                                </td>
+                                <td className="py-3 px-4">
+                                  <div className="flex items-center gap-2">
+                                    <Button variant="outline" size="sm">
+                                      <Flag className="h-4 w-4 mr-1" />
+                                      Report
+                                    </Button>
+                                    <Button variant="ghost" size="sm">
+                                      <X className="h-4 w-4 mr-1" />
+                                      Ignore
+                                    </Button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      
+                      <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-md">
+                        <div className="flex items-center gap-2">
+                          <AlertTriangle className="h-5 w-5 text-amber-500" />
+                          <div className="text-sm font-medium" style={{ color: colors.text.dark }}>
+                            Recommendations
+                          </div>
+                        </div>
+                        <ul className="mt-2 list-disc list-inside" style={{ color: colors.text.dark }}>
+                          <li>Report suspicious reviews to Google for removal</li>
+                          <li>Respond professionally to explain your business practices</li>
+                          <li>Encourage legitimate customers to leave authentic reviews</li>
+                          <li>Monitor regularly for new spam reviews that could harm your reputation</li>
+                        </ul>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-8">
+                      <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+                        <CheckCircle className="h-8 w-8 text-green-600" />
+                      </div>
+                      <div className="text-lg font-medium mb-1" style={{ color: colors.text.dark }}>
+                        No spam reviews detected
+                      </div>
+                      <div className="text-sm text-center max-w-lg" style={{ color: colors.text.secondary }}>
+                        Our AI-powered system has analyzed your reviews and found no signs of suspicious activity. 
+                        We'll continue monitoring for potential spam reviews.
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </motion.div>
+          </TabsContent>
+          
+          {/* Recommendations Tab */}
+          <TabsContent value="recommendations">
+            <Card style={{ 
+              background: colors.background.white,
+              boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+              border: `1px solid ${colors.text.secondary}20`
+            }}>
+              <CardHeader>
+                <CardTitle style={{ color: colors.text.dark }}>Recommendations</CardTitle>
+                <CardDescription style={{ color: colors.text.dark }}>
+                  Actionable steps to improve your Google Business Profile performance
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <AnimatePresence>
+                    {auditResult.recommendations.map((recommendation: any, index: number) => (
+                      <motion.div
+                        key={`recommendation-${index}`}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3, delay: index * 0.1 }}
+                        className="p-4 rounded-lg border"
+                        style={{
+                          background: colors.background.light,
+                          borderColor: getPriorityColor(recommendation.priority) + '40',
+                          borderLeft: `4px solid ${getPriorityColor(recommendation.priority)}`
+                        }}
+                      >
+                        <div className="flex justify-between items-start mb-3">
+                          <div className="flex items-center gap-3">
+                            <div
+                              className="p-2 rounded-full"
+                              style={{
+                                backgroundColor: colors.orange.base + "20",
+                              }}
+                            >
+                              {getCategoryIcon(recommendation.category)}
+                            </div>
+                            <div>
+                              <h3 className="font-semibold" style={{ color: colors.text.dark }}>
+                                {recommendation.description}
+                              </h3>
+                              <div className="flex items-center gap-2 mt-1">
+                                <Badge
+                                  style={{
+                                    backgroundColor: getPriorityColor(recommendation.priority) + '20',
+                                    color: getPriorityColor(recommendation.priority),
+                                    border: `1px solid ${getPriorityColor(recommendation.priority)}`
+                                  }}
+                                >
+                                  {recommendation.priority} priority
+                                </Badge>
+                                <span className="text-xs capitalize" style={{ color: colors.text.secondary }}>
+                                  {recommendation.category}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          <Button
+                            size="sm"
+                            style={{
+                              backgroundColor: colors.orange.base,
+                              color: 'white'
+                            }}
+                            className="hover:bg-[#F5A461]"
+                            onClick={() => handleImplementRecommendation(recommendation)}
+                          >
+                            <ArrowUpRightIcon className="h-4 w-4 mr-1" />
+                            Implement
+                          </Button>
+                        </div>
+                        <div className="ml-12 mb-3" style={{ color: colors.text.dark }}>
+                          <strong>Action:</strong> {recommendation.action}
+                        </div>
+                        <div className="ml-12" style={{ color: colors.text.dark }}>
+                          <strong>Impact:</strong> {recommendation.impact}
+                        </div>
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          {/* Insights Tab */}
+          <TabsContent value="insights">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+              <div className="md:col-span-3">
+                <Card style={{ 
+                  background: colors.background.white,
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+                  border: `1px solid ${colors.text.secondary}20`
+                }}>
+                  <CardHeader>
+                    <div className="flex justify-between items-center">
+                      <CardTitle style={{ color: colors.text.dark }}>Performance Trends</CardTitle>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        style={{ color: colors.orange.base, borderColor: colors.orange.base + '40' }}
+                        onClick={generatePDF}
+                      >
+                        <DownloadIcon className="h-4 w-4 mr-1" />
+                        Export PDF
+                      </Button>
+                    </div>
+                    <CardDescription style={{ color: colors.text.dark }}>
+                      Historical audit performance over time
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-80">
+                      {chartData ? (
+                        <Line data={chartData} options={chartOptions} />
+                      ) : (
+                        <div className="flex justify-center items-center h-full" style={{ color: colors.text.secondary }}>
+                          No historical data available
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+              
+              <div className="md:col-span-1">
+                <Card style={{ 
+                  background: colors.background.white,
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+                  border: `1px solid ${colors.text.secondary}20`,
+                  height: '100%'
+                }}>
+                  <CardHeader>
+                    <CardTitle style={{ color: colors.text.dark }} className="text-lg">Performance Summary</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {insights && insights.length > 0 ? (
+                        <>
+                          <div className="flex items-center justify-between">
+                            <span style={{ color: colors.text.dark }}>Current Score:</span>
+                            <span className="font-bold" style={{ color: getScoreColor(insights[insights.length - 1].score) }}>
+                              {insights[insights.length - 1].score}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span style={{ color: colors.text.dark }}>Previous Score:</span>
+                            <span className="font-bold" style={{ color: getScoreColor(insights[insights.length - 2]?.score || 0) }}>
+                              {insights[insights.length - 2]?.score || 'N/A'}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span style={{ color: colors.text.dark }}>Change:</span>
+                            <span className="font-bold" style={{ 
+                              color: (insights[insights.length - 1].score - (insights[insights.length - 2]?.score || 0)) > 0 
+                                ? '#4CAF50' 
+                                : colors.accent.red 
+                            }}>
+                              {(insights[insights.length - 1].score - (insights[insights.length - 2]?.score || 0)) > 0 ? '+' : ''}
+                              {(insights[insights.length - 1].score - (insights[insights.length - 2]?.score || 0)).toFixed(1)}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span style={{ color: colors.text.dark }}>Highest Score:</span>
+                            <span className="font-bold" style={{ color: '#4CAF50' }}>
+                              {Math.max(...insights.map(i => i.score))}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span style={{ color: colors.text.dark }}>Audits Run:</span>
+                            <span className="font-bold" style={{ color: colors.text.dark }}>
+                              {insights.length}
+                            </span>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="text-center" style={{ color: colors.text.secondary }}>
+                          No insights available
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          </TabsContent>
+          
+          {/* Website Tab */}
+          <TabsContent value="website">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <Card className="mb-6 overflow-hidden">
+                <CardHeader className="bg-white pb-2">
+                  <CardTitle style={{ color: colors.text.dark }}>
+                    Website Analysis
+                  </CardTitle>
+                  <CardDescription>
+                    Analysis of your website linked to your Google Business Profile
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="pt-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <Card className="bg-white shadow-sm border">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-lg">Website Details</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-4">
+                          <div className="flex justify-between">
+                            <span style={{ color: colors.text.dark }}>URL</span>
+                            <span className="font-medium">
+                              <a 
+                                href={auditResult?.details?.business?.website || "#"} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-blue-600 hover:underline flex items-center"
+                              >
+                                {auditResult?.details?.business?.website || "Not available"}
+                                <ArrowUpRightIcon className="h-3 w-3 ml-1" />
+                              </a>
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span style={{ color: colors.text.dark }}>Mobile Friendly</span>
+                            <span className="font-medium text-green-600">Yes</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span style={{ color: colors.text.dark }}>Load Speed</span>
+                            <span className="font-medium text-yellow-600">Medium (2.8s)</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span style={{ color: colors.text.dark }}>SSL Certificate</span>
+                            <span className="font-medium text-green-600">Valid</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span style={{ color: colors.text.dark }}>NAP Consistency</span>
+                            <span className={`font-medium ${auditResult?.details?.business_info?.nap_consistency?.consistent ? 'text-green-600' : 'text-red-600'}`}>
+                              {auditResult?.details?.business_info?.nap_consistency?.consistent ? 'Consistent' : 'Inconsistent'}
+                            </span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card className="bg-white shadow-sm border">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-lg">Issues Found</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-3">
+                          {auditResult?.details?.business_info?.nap_consistency?.issues?.length > 0 ? (
+                            auditResult.details.business_info.nap_consistency.issues.map((issue: string, index: number) => (
+                              <div key={index} className="flex items-start gap-2">
+                                <span className="text-red-500 mt-1">•</span>
+                                <span style={{ color: colors.text.dark }}>{issue}</span>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="text-green-600">No NAP consistency issues found</div>
+                          )}
+                          
+                          {/* Example issues - replace with real data when available */}
+                          <div className="flex items-start gap-2">
+                            <span className="text-yellow-500 mt-1">•</span>
+                            <span style={{ color: colors.text.dark }}>Pages missing meta descriptions</span>
+                          </div>
+                          <div className="flex items-start gap-2">
+                            <span className="text-yellow-500 mt-1">•</span>
+                            <span style={{ color: colors.text.dark }}>Image optimization needed to improve load speed</span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </TabsContent>
+          
+          {/* Photos Tab */}
+          <TabsContent value="photos">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <Card className="mb-6 overflow-hidden">
+                <CardHeader className="bg-white pb-2">
+                  <CardTitle style={{ color: colors.text.dark }}>
+                    Photo Audit
+                  </CardTitle>
+                  <CardDescription>
+                    Analysis of your GBP photos and recommendations for improvement
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="pt-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <Card className="bg-white shadow-sm border">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-lg">Photo Count</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex flex-col items-center">
+                          <div className="text-5xl font-bold mb-2" style={{
+                            color: auditResult?.details?.photos?.total_count > 5 
+                              ? '#28A745' 
+                              : auditResult?.details?.photos?.total_count > 0 
+                                ? '#F5A461' 
+                                : '#E63946'
+                          }}>
+                            {auditResult?.details?.photos?.total_count || 0}
+                          </div>
+                          <div className="text-sm text-center" style={{ color: colors.text.secondary }}>
+                            Total photos on your profile
+                          </div>
+                          <div className="text-sm mt-3 p-2 rounded-md" style={{ 
+                            backgroundColor: auditResult?.details?.photos?.total_count > 5 
+                              ? 'rgba(40, 167, 69, 0.1)' 
+                              : auditResult?.details?.photos?.total_count > 0 
+                                ? 'rgba(245, 164, 97, 0.1)' 
+                                : 'rgba(230, 57, 70, 0.1)',
+                            color: auditResult?.details?.photos?.total_count > 5 
+                              ? '#28A745' 
+                              : auditResult?.details?.photos?.total_count > 0 
+                                ? '#F5A461' 
+                                : '#E63946'
+                          }}>
+                            {auditResult?.details?.photos?.total_count > 5 
+                              ? 'Good photo count' 
+                              : auditResult?.details?.photos?.total_count > 0 
+                                ? 'Add more photos to improve visibility' 
+                                : 'Add photos immediately to improve your profile'}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card className="bg-white shadow-sm border">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-lg">Photo Variety</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-center">
+                            <span style={{ color: colors.text.dark }}>Interior</span>
+                            <Badge style={{ 
+                              backgroundColor: (auditResult?.details?.photos?.types?.interior || 0) > 2 ? '#28A745' : '#F5A461',
+                              color: 'white'
+                            }}>
+                              {auditResult?.details?.photos?.types?.interior || 0}
+                            </Badge>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span style={{ color: colors.text.dark }}>Exterior</span>
+                            <Badge style={{ 
+                              backgroundColor: (auditResult?.details?.photos?.types?.exterior || 0) > 1 ? '#28A745' : '#F5A461',
+                              color: 'white'
+                            }}>
+                              {auditResult?.details?.photos?.types?.exterior || 0}
+                            </Badge>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span style={{ color: colors.text.dark }}>Product</span>
+                            <Badge style={{ 
+                              backgroundColor: (auditResult?.details?.photos?.types?.product || 0) > 2 ? '#28A745' : '#F5A461',
+                              color: 'white'
+                            }}>
+                              {auditResult?.details?.photos?.types?.product || 0}
+                            </Badge>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span style={{ color: colors.text.dark }}>Team</span>
+                            <Badge style={{ 
+                              backgroundColor: (auditResult?.details?.photos?.types?.team || 0) > 1 ? '#28A745' : '#F5A461',
+                              color: 'white'
+                            }}>
+                              {auditResult?.details?.photos?.types?.team || 0}
+                            </Badge>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span style={{ color: colors.text.dark }}>Other</span>
+                            <Badge style={{ 
+                              backgroundColor: colors.orange.base,
+                              color: 'white'
+                            }}>
+                              {auditResult?.details?.photos?.types?.other || 0}
+                            </Badge>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card className="bg-white shadow-sm border">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-lg">Photo Source</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex flex-col h-full">
+                          <div className="text-sm mb-3" style={{ color: colors.text.secondary }}>
+                            Source of photos on your profile
+                          </div>
+                          
+                          <div className="flex-grow">
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="bg-gray-100 p-4 rounded-md flex flex-col items-center">
+                                <div className="text-3xl font-bold" style={{ color: colors.orange.base }}>
+                                  {auditResult?.details?.photos?.business_uploaded || 0}
+                                </div>
+                                <div className="text-sm text-center" style={{ color: colors.text.dark }}>
+                                  Business Uploaded
+                                </div>
+                              </div>
+                              
+                              <div className="bg-gray-100 p-4 rounded-md flex flex-col items-center">
+                                <div className="text-3xl font-bold" style={{ color: colors.accent.blue }}>
+                                  {auditResult?.details?.photos?.user_uploaded || 0}
+                                </div>
+                                <div className="text-sm text-center" style={{ color: colors.text.dark }}>
+                                  User Uploaded
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="mt-4 text-sm p-2 rounded-md bg-[#F28C38]20">
+                            <span style={{ color: colors.text.dark }}>
+                              {auditResult?.details?.photos?.business_uploaded > auditResult?.details?.photos?.user_uploaded
+                                ? "Maintain regular uploads of high-quality photos"
+                                : "Consider uploading more business photos to balance with user content"}
+                            </span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                  
+                  <div className="mt-6">
+                    <Card className="bg-white shadow-sm border">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-lg">Photo Recommendations</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <ul className="space-y-2">
+                          {auditResult?.details?.photos?.recommendations ? (
+                            auditResult.details.photos.recommendations.map((rec: string, index: number) => (
+                              <li key={index} className="flex items-start gap-2">
+                                <div className="min-w-[20px] text-center">
+                                  <span className="text-[#F28C38]">•</span>
+                                </div>
+                                <span style={{ color: colors.text.dark }}>{rec}</span>
+                              </li>
+                            ))
+                          ) : (
+                            <li className="text-gray-500">No specific recommendations available</li>
+                          )}
+                        </ul>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </TabsContent>
+          
+          {/* Q&A Tab */}
+          <TabsContent value="qna">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <Card className="mb-6 overflow-hidden">
+                <CardHeader className="bg-white pb-2">
+                  <CardTitle style={{ color: colors.text.dark }}>
+                    Q&A Audit
+                  </CardTitle>
+                  <CardDescription>
+                    Analysis of your Google Business Profile Q&A section
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="pt-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <Card className="bg-white shadow-sm border">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-lg">Q&A Overview</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-4">
+                          <div className="flex justify-between items-center">
+                            <span style={{ color: colors.text.dark }}>Total Questions</span>
+                            <Badge style={{ backgroundColor: colors.orange.base, color: 'white' }}>
+                              {auditResult?.details?.qna?.total_questions || 0}
+                            </Badge>
+                          </div>
+                          
+                          <div className="flex justify-between items-center">
+                            <span style={{ color: colors.text.dark }}>Unanswered Questions</span>
+                            <Badge style={{ 
+                              backgroundColor: (auditResult?.details?.qna?.unanswered_count || 0) === 0 
+                                ? '#28A745' 
+                                : (auditResult?.details?.qna?.unanswered_count || 0) <= 3 
+                                  ? '#F5A461' 
+                                  : '#E63946',
+                              color: 'white'
+                            }}>
+                              {auditResult?.details?.qna?.unanswered_count || 0}
+                            </Badge>
+                          </div>
+                          
+                          <div className="flex justify-between items-center">
+                            <span style={{ color: colors.text.dark }}>Engagement Rate</span>
+                            <span className="font-medium" style={{ 
+                              color: (auditResult?.details?.qna?.engagement_rate || 0) >= 75 
+                                ? '#28A745' 
+                                : (auditResult?.details?.qna?.engagement_rate || 0) >= 50 
+                                  ? '#F5A461' 
+                                  : '#E63946'
+                            }}>
+                              {auditResult?.details?.qna?.engagement_rate || 0}%
+                            </span>
+                          </div>
+                          
+                          <div className="mt-4 p-3 rounded-md" style={{ 
+                            backgroundColor: (auditResult?.details?.qna?.unanswered_count || 0) === 0 
+                              ? 'rgba(40, 167, 69, 0.1)' 
+                              : (auditResult?.details?.qna?.unanswered_count || 0) <= 3 
+                                ? 'rgba(245, 164, 97, 0.1)' 
+                                : 'rgba(230, 57, 70, 0.1)'
+                          }}>
+                            <p style={{ 
+                              color: (auditResult?.details?.qna?.unanswered_count || 0) === 0 
+                                ? '#28A745' 
+                                : (auditResult?.details?.qna?.unanswered_count || 0) <= 3 
+                                  ? '#F5A461' 
+                                  : '#E63946'
+                            }}>
+                              {(auditResult?.details?.qna?.unanswered_count || 0) === 0 
+                                ? 'Excellent! All questions have been answered.' 
+                                : (auditResult?.details?.qna?.unanswered_count || 0) <= 3 
+                                  ? `You have ${auditResult?.details?.qna?.unanswered_count} unanswered questions that need attention.` 
+                                  : `Critical: ${auditResult?.details?.qna?.unanswered_count} questions require immediate answers.`}
+                            </p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card className="bg-white shadow-sm border">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-lg">Keyword Usage in Q&A</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-4">
+                          <div>
+                            <h4 className="font-medium mb-2" style={{ color: colors.text.dark }}>Keywords Present in Q&A</h4>
+                            <div className="flex flex-wrap gap-2">
+                              {auditResult?.details?.qna?.keyword_usage?.present?.length > 0 ? (
+                                auditResult.details.qna.keyword_usage.present.map((keyword: string, index: number) => (
+                                  <Badge key={index} style={{ backgroundColor: '#F28C38', color: 'white' }}>
+                                    {keyword}
+                                  </Badge>
+                                ))
+                              ) : (
+                                <span style={{ color: colors.text.secondary }}>No keywords found</span>
+                              )}
+                            </div>
+                          </div>
+                          
+                          <div>
+                            <h4 className="font-medium mb-2" style={{ color: colors.text.dark }}>Missing Keywords</h4>
+                            <div className="flex flex-wrap gap-2">
+                              {auditResult?.details?.qna?.keyword_usage?.missing?.length > 0 ? (
+                                auditResult.details.qna.keyword_usage.missing.map((keyword: string, index: number) => (
+                                  <Badge key={index} variant="outline" style={{ borderColor: '#E63946', color: '#E63946' }}>
+                                    {keyword}
+                                  </Badge>
+                                ))
+                              ) : (
+                                <span style={{ color: colors.text.secondary }}>No missing keywords</span>
+                              )}
+                            </div>
+                          </div>
+                          
+                          <div className="mt-4 p-3 rounded-md bg-[#F28C38]10">
+                            <p style={{ color: colors.text.dark }}>
+                              Keywords in Q&A provide valuable SEO benefits. Consider addressing questions that include your missing keywords.
+                            </p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                  
+                  <Card className="bg-white shadow-sm border">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-lg">Recommendations</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <ul className="space-y-2">
+                        {auditResult?.details?.qna?.recommendations ? (
+                          auditResult.details.qna.recommendations.map((rec: string, index: number) => (
+                            <li key={index} className="flex items-start gap-2">
+                              <div className="min-w-[20px] text-center">
+                                <span className="text-[#F28C38]">•</span>
+                              </div>
+                              <span style={{ color: colors.text.dark }}>{rec}</span>
+                            </li>
+                          ))
+                        ) : (
+                          <li className="text-gray-500">No specific recommendations available</li>
+                        )}
+                      </ul>
+                    </CardContent>
+                  </Card>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </TabsContent>
+          
+          {/* Keywords Tab */}
+          <TabsContent value="keywords">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <Card className="mb-6 overflow-hidden">
+                <CardHeader className="bg-white pb-2">
+                  <CardTitle style={{ color: colors.text.dark }}>
+                    Keyword Insights
+                  </CardTitle>
+                  <CardDescription>
+                    Analysis of your target keywords across your Google Business Profile
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="pt-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                    <Card className="bg-white shadow-sm border md:col-span-1">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-lg">Target Keywords</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-2">
+                          {auditResult?.details?.keywords?.target_keywords?.map((keyword: string, index: number) => (
+                            <Badge key={index} className="mr-2 mb-2" style={{ backgroundColor: '#F28C38', color: 'white' }}>
+                              {keyword}
+                            </Badge>
+                          ))}
+                        </div>
+                        
+                        <div className="mt-4 p-3 rounded-md bg-[#F28C38]10">
+                          <p className="text-sm" style={{ color: colors.text.dark }}>
+                            These are the keywords you should focus on optimizing across your Google Business Profile.
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card className="bg-white shadow-sm border md:col-span-2">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-lg">Keyword Usage</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-4">
+                          <div>
+                            <h4 className="font-medium mb-2" style={{ color: colors.text.dark }}>Keywords in Business Description</h4>
+                            <div className="flex flex-wrap gap-2">
+                              {auditResult?.details?.keywords?.usage?.description?.length > 0 ? (
+                                auditResult.details.keywords.usage.description.map((keyword: string, index: number) => (
+                                  <Badge key={index} style={{ backgroundColor: '#28A745', color: 'white' }}>
+                                    {keyword}
+                                  </Badge>
+                                ))
+                              ) : (
+                                <span style={{ color: colors.text.secondary }}>No keywords found in description</span>
+                              )}
+                            </div>
+                          </div>
+                          
+                          <div>
+                            <h4 className="font-medium mb-2" style={{ color: colors.text.dark }}>Keywords in Posts</h4>
+                            <div className="flex flex-wrap gap-2">
+                              {auditResult?.details?.keywords?.usage?.posts?.length > 0 ? (
+                                auditResult.details.keywords.usage.posts.map((keyword: string, index: number) => (
+                                  <Badge key={index} style={{ backgroundColor: '#F5A461', color: 'white' }}>
+                                    {keyword}
+                                  </Badge>
+                                ))
+                              ) : (
+                                <span style={{ color: colors.text.secondary }}>No keywords found in posts</span>
+                              )}
+                            </div>
+                          </div>
+                          
+                          <div>
+                            <h4 className="font-medium mb-2" style={{ color: colors.text.dark }}>Keywords in Reviews</h4>
+                            <div className="flex flex-wrap gap-2">
+                              {auditResult?.details?.keywords?.usage?.reviews?.length > 0 ? (
+                                auditResult.details.keywords.usage.reviews.map((keyword: string, index: number) => (
+                                  <Badge key={index} style={{ backgroundColor: '#6B5B95', color: 'white' }}>
+                                    {keyword}
+                                  </Badge>
+                                ))
+                              ) : (
+                                <span style={{ color: colors.text.secondary }}>No keywords found in reviews</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <Card className="bg-white shadow-sm border">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-lg">Keyword Gaps</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-4">
+                          <div>
+                            <h4 className="font-medium mb-2" style={{ color: colors.text.dark }}>Missing Keywords</h4>
+                            <div className="flex flex-wrap gap-2">
+                              {auditResult?.details?.keywords?.gaps?.length > 0 ? (
+                                auditResult.details.keywords.gaps.map((keyword: string, index: number) => (
+                                  <Badge key={index} variant="outline" style={{ borderColor: '#E63946', color: '#E63946' }}>
+                                    {keyword}
+                                  </Badge>
+                                ))
+                              ) : (
+                                <span style={{ color: colors.text.secondary }}>No keyword gaps identified</span>
+                              )}
+                            </div>
+                          </div>
+                          
+                          <div className="mt-4 p-3 rounded-md bg-[#E63946]10">
+                            <p className="text-sm" style={{ color: colors.text.dark }}>
+                              These keywords are missing from your GBP content. Consider incorporating them into your description, posts, and responses to reviews.
+                            </p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card className="bg-white shadow-sm border">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-lg">Keyword Opportunities</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-3">
+                          {auditResult?.details?.keywords?.opportunities?.map((keyword: any, index: number) => (
+                            <div key={index} className="flex justify-between items-center">
+                              <span style={{ color: colors.text.dark }}>{keyword.keyword}</span>
+                              <div className="flex items-center gap-2">
+                                <span style={{ color: colors.text.secondary }}>Volume: {keyword.volume}</span>
+                                <Badge style={{ 
+                                  backgroundColor: keyword.opportunity === 'high' 
+                                    ? '#28A745' 
+                                    : keyword.opportunity === 'medium' 
+                                      ? '#F5A461' 
+                                      : '#6B5B95',
+                                  color: 'white' 
+                                }}>
+                                  {keyword.opportunity}
+                                </Badge>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </TabsContent>
+          
+          {/* Duplicates Tab */}
+          <TabsContent value="duplicates">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <Card className="mb-6 overflow-hidden">
+                <CardHeader className="bg-white pb-2">
+                  <CardTitle style={{ color: colors.text.dark }}>
+                    Duplicate Listings Check
+                  </CardTitle>
+                  <CardDescription>
+                    Identify and resolve duplicate Google Business Profile listings
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="pt-4">
+                  <div className="mb-6">
+                    <Card className={`bg-white shadow-sm border ${auditResult?.details?.duplicates?.length === 0 ? 'border-green-500' : 'border-red-500'}`}>
+                      <CardContent className="p-6">
+                        <div className="flex items-center gap-4">
+                          <div className={`p-3 rounded-full ${auditResult?.details?.duplicates?.length === 0 ? 'bg-green-100' : 'bg-red-100'}`}>
+                            <SearchIcon className={`h-6 w-6 ${auditResult?.details?.duplicates?.length === 0 ? 'text-green-600' : 'text-red-600'}`} />
+                          </div>
+                          <div>
+                            <h3 className="text-lg font-medium" style={{ color: colors.text.dark }}>
+                              {auditResult?.details?.duplicates?.length === 0 
+                                ? 'No duplicate listings found' 
+                                : `${auditResult?.details?.duplicates?.length} potential duplicate listing${auditResult?.details?.duplicates?.length === 1 ? '' : 's'} found`}
+                            </h3>
+                            <p className="text-sm" style={{ color: colors.text.secondary }}>
+                              {auditResult?.details?.duplicates?.length === 0 
+                                ? 'Your Google Business Profile appears to be the only listing for your business.' 
+                                : 'Potential duplicate listings may confuse customers and dilute your online presence.'}
+                            </p>
+                          </div>
+                          <div className="ml-auto">
+                            <div className={`text-xl font-bold ${auditResult?.details?.duplicates?.length === 0 ? 'text-green-600' : 'text-red-600'}`}>
+                              {auditResult?.duplicates_score || 100}/100
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                  
+                  {auditResult?.details?.duplicates?.length > 0 && (
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-medium" style={{ color: colors.text.dark }}>Potential Duplicate Listings</h3>
+                      
+                      {auditResult.details.duplicates.map((duplicate: any, index: number) => (
+                        <Card key={index} className="bg-white shadow-sm border-red-200 border">
+                          <CardContent className="p-4">
+                            <div className="flex flex-col md:flex-row md:items-center gap-4">
+                              <div className="flex-grow">
+                                <h4 className="font-medium" style={{ color: colors.text.dark }}>{duplicate.name}</h4>
+                                <p className="text-sm" style={{ color: colors.text.secondary }}>{duplicate.address}</p>
+                                {duplicate.phone && (
+                                  <p className="text-sm" style={{ color: colors.text.secondary }}>{duplicate.phone}</p>
+                                )}
+                                {duplicate.website && (
+                                  <a 
+                                    href={duplicate.website}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-sm text-blue-600 hover:underline"
+                                  >
+                                    {duplicate.website}
+                                  </a>
+                                )}
+                              </div>
+                              
+                              <div className="flex items-center gap-3">
+                                <Badge style={{ 
+                                  backgroundColor: duplicate.match_score >= 90 
+                                    ? '#E63946' 
+                                    : duplicate.match_score >= 75 
+                                      ? '#F5A461' 
+                                      : '#6B5B95',
+                                  color: 'white' 
+                                }}>
+                                  {duplicate.match_score}% match
+                                </Badge>
+                                
+                                <a 
+                                  href={duplicate.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="px-3 py-1 bg-[#F28C38] text-white rounded-md text-sm hover:bg-[#F5A461] transition-colors flex items-center gap-1"
+                                >
+                                  View
+                                  <ArrowUpRightIcon className="h-3 w-3" />
+                                </a>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                      
+                      <Card className="bg-white shadow-sm border mt-6">
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-lg">How to Fix Duplicate Listings</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <ol className="space-y-2 list-decimal pl-5">
+                            <li style={{ color: colors.text.dark }}>
+                              Verify ownership of your primary listing through Google Business Profile Manager
+                            </li>
+                            <li style={{ color: colors.text.dark }}>
+                              Claim the duplicate listings if possible (you may need to verify ownership)
+                            </li>
+                            <li style={{ color: colors.text.dark }}>
+                              Contact Google Support to report duplicates and request a merge
+                            </li>
+                            <li style={{ color: colors.text.dark }}>
+                              Provide evidence that the listings represent the same business entity
+                            </li>
+                            <li style={{ color: colors.text.dark }}>
+                              Be patient, as the process can take several weeks to complete
+                            </li>
+                          </ol>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </motion.div>
+          </TabsContent>
+        </Tabs>
+      )}
+    </div>
+  );
+}

@@ -1,0 +1,72 @@
+Update the left-hand sidebar menu in the React + Node.js SaaS application on Replit to rename main menu items, add sub-menus, adjust the layout for better text visibility, and include toggle arrows for sub-menus, aligning with the "LOCALAUTHORITY" branding:
+
+- Backend (Node.js):
+  - No backend changes required for this update.
+
+- Frontend (React):
+  - **Renaming and Sub-Menu Structure**:
+    - Update main menu items and add sub-menus as follows:
+      - **Local Dashboard** (formerly Dashboard)
+      - **Reputation Management** (formerly Reviews)
+        - Sub-menus:
+          - Review Management
+          - Request Reviews
+          - Sentiment Analysis
+      - **Content Management** (formerly Posts)
+        - Sub-menus:
+          - Create GBP Post
+          - Post Scheduler
+          - Post Analytics
+      - **Local Ranking** (formerly Campaigns)
+        - Sub-menus:
+          - GBP Map Rankings
+          - Local Organic Rankings
+          - Competitor Analysis
+      - **Local Links** (formerly Citations)
+        - Sub-menus:
+          - Citations Report
+          - Competitor Gap Analysis
+          - Build Local Signals
+      - **GBP Audit** (unchanged)
+      - **Optimization (GBP Insights)** (unchanged)
+      - **Reports** (unchanged)
+      - **Admin** (unchanged, separate at the bottom)
+    - Group sub-menus under collapsible sections for Reputation Management, Content Management, Local Ranking, and Local Links.
+
+  - **Layout Adjustments**:
+    - **Font Size or Sidebar Expansion**:
+      - Reduce the font size from 16px to 14px for menu items to fit text on one line, or
+      - Expand the sidebar width from the current size (assumed ~200px) to ~250px to accommodate longer names (e.g., "Reputation Management", "Competitor Gap Analysis") on a single line.
+      - Use CSS media queries to adjust width dynamically: 250px for desktop (>768px), 200px for tablet (768px-480px), and 180px for mobile (<480px) with text wrapping if necessary.
+    - Ensure all text remains legible with `#FFFFFF` color on the sidebar gradient.
+    - Use Montserrat font with 14px for menu items, 24px bold for "LOCALAUTHORITY" branding.
+
+  - **Sub-Menu Toggle**:
+    - Add a bottom arrow (▼) icon next to each main menu item with sub-menus (Reputation Management, Content Management, Local Ranking, Local Links).
+    - Use `#F28C38` for the arrow, which rotates 180 degrees (↑) when sub-menus are open.
+    - Sub-menus should open/close with a smooth Framer Motion animation (slide-down for open, slide-up for close) and maintain the same 14px Montserrat font and `#FFFFFF` text color.
+    - Active sub-menu items should highlight in `#F28C38` with `#FFFFFF` text.
+
+  - **Design Updates**:
+    - **Background**: Sidebar gradient `#1C2526` to `#0D1214`, main content `#FFFFFF`.
+    - **Text**: `#FFFFFF` for inactive menu items, `#F28C38` for active/hover items and arrows, `#1C2526` for main content text.
+    - **Buttons**: `#F28C38` with `#FFFFFF` text, hover `#F5A461` for any action buttons within sub-menus (if added later).
+    - **Icons**: `#F28C38` with `#1C2526` text/icon color in the main content.
+    - **Separators**: Add a horizontal line in `#D3D7D9` below Admin to distinguish it.
+    - Use Framer Motion for collapsible sub-menu animations.
+
+  - **Structure**:
+    - Place "LOCALAUTHORITY" at the top in 24px bold Montserrat, `#1C2526` text on `#FFFFFF` background (if part of the header).
+    - List main menu items vertically, with sub-menus indented under their parent item.
+    - Keep Admin at the bottom with a separator.
+
+- Testing:
+  - Verify renaming (Local Dashboard, Reputation Management, etc.) and sub-menu structure are correct.
+  - Test sidebar width adjustment or font size reduction ensures all text fits on one line.
+  - Confirm sub-menu toggle arrows work (open/close with animation) and maintain consistent styling.
+  - Ensure responsiveness across desktop (>768px), tablet (768px-480px), and mobile (<480px) screen sizes.
+  - Check UI consistency with the existing "LOCALAUTHORITY" design palette.
+
+- Deployment Notes:
+  - Update any navigation logic or routing to reflect new menu names (e.g., `/reviews` to `/reputation-management`, `/posts` to `/content-management`).
+  - Ensure sub-menu routes (e.g., `/reputation-management/review-management`) are handled by the existing React Router setup.

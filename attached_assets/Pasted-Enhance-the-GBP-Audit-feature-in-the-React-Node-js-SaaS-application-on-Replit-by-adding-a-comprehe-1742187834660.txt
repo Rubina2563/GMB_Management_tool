@@ -1,0 +1,41 @@
+Enhance the GBP Audit feature in the React + Node.js SaaS application on Replit by adding a comprehensive audit of GBP business information fields:
+
+- Backend (Node.js):
+  - Update "/api/client/gbp/audit" to include business information checks:
+    - Fetch GBP data (mock Google Business Profile API): business name, categories (primary/secondary), services, tags/attributes, description, opening date, phone, chat link, website link, social profiles (Facebook, Twitter), location, service area, opening hours (day-by-day, special hours), photos/videos.
+    - Evaluate:
+      - Business Name: Check for keyword inclusion (e.g., "Plumbing" for a plumber) without stuffing.
+      - Categories: Verify relevance (e.g., "Plumber" as primary, "Emergency Plumbing Service" as secondary).
+      - Services: Ensure all services are listed and match offerings.
+      - Tags/Attributes: Check for identity attributes (e.g., "Wheelchair accessible").
+      - Description: Confirm length (>750 chars), keyword inclusion, no promotional language.
+      - Opening Date: Verify presence (older businesses may rank better).
+      - Phone: Ensure a local number is used.
+      - Chat Link: Check if enabled.
+      - Website Link: Confirm it points to a relevant page.
+      - Social Profiles: Verify links are present and consistent.
+      - Location/Service Area: Ensure accuracy of address and service area radius.
+      - Opening Hours: Audit day-by-day hours for completeness, including special hours.
+      - Photos/Videos: Check for >5 photos, presence of videos, virtual tours.
+      - NAP Consistency: Compare NAP across GBP, website, and social profiles (mock comparison).
+    - Add audit results to the existing report: Include pass/fail for each field and recommendations (e.g., "Add 200 chars to description", "Include 'Wheelchair accessible' attribute").
+  - Update SQLite `gbp_audits` table to store new audit details (e.g., `business_info` JSON field).
+  - Credit System: Ensure 1 credit per audit (already implemented).
+
+- Frontend (React):
+  - Update /client/gbp-audit:
+    - Add "Business Information" section to the audit report:
+      - Display each field’s status (e.g., "Categories: Relevant", "Description: Too short, add 200 chars").
+      - Use #F28C38 for pass icons, #E63946 for fail icons.
+      - Recommendations: List with bullets (#1C2526 text), "Implement" button (#F28C38 with #FFFFFF text, hover #F5A461) per suggestion (mock action with toast: "Recommendation applied").
+    - Recalculate overall score (0-100): Assign 30% weight to business information (e.g., 10 fields checked, 7 pass = 21/30).
+  - Design:
+    - Background: #FFFFFF.
+    - Text: #1C2526 (primary), #D3D7D9 (secondary).
+    - Framer Motion: Fade-in for cards, scale on hover for buttons.
+    - Montserrat font: 24px bold headings, 16px body.
+
+- Testing:
+  - Verify all GBP fields are audited with actionable recommendations.
+  - Confirm UI updates (pass/fail icons, recommendations) are consistent with existing design.
+  - Ensure overall score updates correctly.

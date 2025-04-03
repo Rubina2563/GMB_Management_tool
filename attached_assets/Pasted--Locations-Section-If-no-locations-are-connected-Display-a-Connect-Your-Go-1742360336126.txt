@@ -1,0 +1,35 @@
+- **Locations Section**:
+      - If no locations are connected:
+        - Display a "Connect Your Google Account" button (#F28C38 with #FFFFFF text, hover #F5A461) triggering `/api/auth/google-connect`.
+      - Otherwise:
+        - **Sort Option**: Add a "Sort by" dropdown above the locations (e.g., "Sort by Name", "Sort by Ranking"), #FFFFFF background, #1C2526 text.
+        - Display all connected GBP locations in a 2-column grid (desktop), 1-column for mobile (<768px).
+        - **Selected Location (Expanded View)**:
+          - Show: Location Name, Address, Phone, Website, Overall Ranking (e.g., "Position 3"), Ranking Trend (green #28A745 arrow up for improvement, red #E63946 arrow down for decline), Status (e.g., "Active" in #F28C38 badge), and "View on Maps" link.
+          - Border: #F28C38, 2px solid.
+          - Add "Selected" label in #F28C38 at 45-degree angle in top-right corner (CSS transform: rotate(45deg)).
+          - Quick Stats Below: Total Reviews, Average Rating, Last Post Date (#1C2526 text).
+        - **Other Locations (Minimalist View)**:
+          - Show: Location Name, Address, "Select" button (#F28C38 with #FFFFFF text, hover #F5A461), and "View on Maps" link (#1C2526 text).
+          - Border: #1C2526, 1px solid.
+        - Background: #FFFFFF for all cards.
+    - **Key Metrics Widgets**:
+      - Add a timeframe filter above the widgets: "Last 7 Days", "Last 30 Days" (dropdown, #FFFFFF background, #1C2526 text).
+      - Add a row of 4 cards below the locations section:
+        - Review Summary: Total reviews, average rating.
+        - Post Engagement: Total posts, average views.
+        - Ranking Trend: Average GBP Map Ranking position.
+        - Citation Health: Total citations, missing high-priority.
+      - Design:
+        - Background: #FFFFFF.
+        - Text: #1C2526, Montserrat 16px.
+        - Icon: #F28C38.
+        - Border: #1C2526, 1px solid.
+    - **Optimization Progress**: Retain as-is, below the key metrics (white background, #F28C38 accents).
+    - **Recent Activity**: Retain as-is, below Optimization Progress (white background, #F28C38 links).
+  - **Design**:
+    - Background: #FFFFFF for all components, sub-components, and form fields.
+    - Text: #1C2526 (primary).
+    - Buttons: #F28C38 with #FFFFFF text, hover #F5A461.
+    - Framer Motion: Fade-in for cards, scale on hover for action cards.
+    - Montserrat font: 24px bold headings, 16px body.

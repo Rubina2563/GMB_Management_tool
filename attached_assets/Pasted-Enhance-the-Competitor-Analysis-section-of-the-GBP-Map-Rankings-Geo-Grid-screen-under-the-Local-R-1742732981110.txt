@@ -1,0 +1,152 @@
+Enhance the "Competitor Analysis" section of the GBP Map Rankings Geo-Grid screen under the "Local Rankings" menu in the "LOCALAUTHORITY" React + Node.js SaaS application on Replit. The current section displays a basic table with competitor ranks and keyword overlap percentages, along with a "Competing Keywords" list. Improve this section by adding more detailed competitor data, visual elements like charts and heatmaps, and interactivity to provide deeper insights into competitor performance.
+
+### Objective
+- **Purpose**: Transform the "Competitor Analysis" section into a comprehensive and engaging component by:
+  - Adding detailed competitor data, including reviews, categories, business hours, website domain authority, keyword overlap breakdown, strengths, and trends.
+  - Incorporating visual elements like bar charts, radar charts, heatmaps, and competitor cards to make the data more engaging.
+  - Introducing interactivity such as filters, detailed comparison pop-ups, and view toggles.
+- **Field Testing Goal**: Ensure the section provides actionable insights into competitor performance, is visually appealing, and allows users to interact with the data (e.g., filtering competitors, viewing detailed comparisons).
+
+### Backend Requirements
+- **Step 1: Enhance the Existing Endpoint for Competitor Data**:
+  - **Endpoint**: Use the existing endpoint that provides competitor data for the GBP Map Rankings screen (likely related to fetching competitor rankings for the selected keyword and campaign).
+  - **Purpose**: Update the endpoint to return additional competitor data for the "Competitor Analysis" section.
+  - **New Data Points to Return**:
+    - **Competitor Details**: For each competitor (including the user’s business), include:
+      - `name`: The business name.
+      - `rank`: The current rank for the selected keyword.
+      - `overlap`: The keyword overlap percentage with the user’s business.
+      - `reviewCount`: Number of reviews on Google Maps (fetched via Google Places API).
+      - `averageRating`: Average rating on Google Maps (e.g., 4.5 out of 5).
+      - `categories`: Array of business categories (e.g., ["Plumber", "Home Services"]).
+      - `isOpen`: Boolean indicating if the business is currently open (based on business hours).
+      - `website`: The business website URL (if available).
+      - `domainAuthority`: The domain authority of the website (fetched via DataForSEO, e.g., 45 on a scale of 0-100).
+      - Example: `[{ name: "Your Business", rank: 1, overlap: "100%", reviewCount: 120, averageRating: 4.8, categories: ["Plumber"], isOpen: true, website: "https://yourbusiness.com", domainAuthority: 50 }, ...]`.
+    - **Keyword Overlap Breakdown**: An array of objects showing the top 5 keywords where the user’s business and each competitor overlap, including ranks for both.
+      - Example: `[{ keyword: "local plumber", yourRank: 1, competitorRank: 2, competitorName: "Competitor A" }, ...]`.
+    - **Competitor Strengths**: An object for each competitor highlighting their strengths compared to the user’s business, based on metrics like rank, reviews, and domain authority.
+      - Example: `[{ competitorName: "Competitor A", strengths: { betterRank: false, moreReviews: true, higherDomainAuthority: false } }, ...]`.
+    - **Competitor Trends**: An array of objects for each competitor showing their rank history for the selected keyword over the past 30 days.
+      - Example: `[{ competitorName: "Competitor A", trends: [{ date: "2025-03-20", rank: 2 }, { date: "2025-03-19", rank: 3 }, ...] }, ...]`.
+  - **Logic**:
+    - Fetch competitor data for the selected keyword using the Google Places API:
+      - Use the existing integration to search for businesses ranking for the keyword in the campaign’s location.
+      - Extract details like review count, average rating, categories, business hours (to determine `isOpen`), and website URL.
+    - Fetch domain authority for each competitor’s website using the DataForSEO API:
+      - For each competitor with a website, make an API call to DataForSEO to get the domain authority score.
+      - Handle cases where the website is not available (return 0 for domain authority).
+    - Calculate keyword overlap breakdown:
+      - Identify the top 5 keywords where the user’s business and each competitor both rank (using DataForSEO or Google Places API data).
+      - For each keyword, include the user’s rank and the competitor’s rank.
+    - Determine competitor strengths:
+      - Compare each competitor to the user’s business on rank, review count, and domain authority.
+      - Flag a strength as `true` if the competitor outperforms the user (e.g., `moreReviews: true` if the competitor has more reviews).
+    - Fetch competitor rank trends:
+      - Query the `rankingHistory` collection (or a similar collection if competitor data is stored separately) to get the rank history for each competitor over the past 30 days.
+      - Return the trends as an array of date-rank pairs for each competitor.
+    - Include these new data points in the response alongside the existing competitor data.
+
+### Frontend Requirements
+- **Step 1: Redesign the "Competitor Analysis" Section**:
+  - **Location**: Update the "Competitor Analysis" section, which is currently displayed below the geo-grid map in the GBP Map Rankings screen under the "Local Rankings" menu, alongside the "Ranking Summary" and "Ranking Trends" sections.
+  - **New Data Points to Display**:
+    - **Competitor Details**: Show a comparison of the user’s business and competitors on rank, keyword overlap, review count, average rating, and domain authority.
+    - **Keyword Overlap Breakdown**: Display the top 5 overlapping keywords with ranks for the user and each competitor.
+    - **Competitor Strengths**: Highlight areas where each competitor outperforms the user’s business.
+    - **Competitor Trends**: Show the rank history for each competitor over the past 30 days.
+  - **Visual Elements**:
+    - **Bar Chart for Competitor Metrics**:
+      - Display a bar chart comparing the user’s business and competitors on three metrics: rank, review count, and domain authority.
+      - Use the following colors for each metric:
+        - Rank: #F28C38 (Orange).
+        - Review Count: #28A745 (Green).
+        - Domain Authority: #E63946 (Red).
+      - Plot the x-axis as the business names (user’s business and competitors) and the y-axis as the metric values.
+      - Scale the y-axis appropriately:
+        - Rank: 0 to 20.
+        - Review Count: 0 to the maximum review count among all businesses.
+        - Domain Authority: 0 to 100.
+      - Add a legend to identify each metric.
+      - Ensure all text in the chart (labels, legend, tooltips) is black (#000000).
+    - **Radar Chart for Strengths**:
+      - Display a radar chart comparing the user’s business and a selected competitor on five dimensions: rank, review count, average rating, domain authority, and keyword overlap.
+      - Use #F28C38 for the user’s business and #E63946 for the competitor.
+      - Scale each dimension from 0 to 100 (normalize the values, e.g., rank of 1 = 100, rank of 20 = 0; review count scaled relative to the maximum).
+      - Ensure all text in the chart (labels, legend, tooltips) is black (#000000).
+    - **Heatmap for Keyword Overlap**:
+      - Display a heatmap showing the top 5 overlapping keywords for all competitors.
+      - Each row represents a keyword, and each column represents a competitor.
+      - Color the cells based on the rank difference between the user and the competitor:
+        - Green (#28A745) if the user ranks higher (better).
+        - Red (#E63946) if the competitor ranks higher.
+        - Gray (#CCCCCC) if the ranks are the same.
+      - Intensity of the color should reflect the magnitude of the rank difference (e.g., a larger difference = more intense color).
+      - Ensure all text in the heatmap (keyword names, competitor names, rank values) is black (#000000).
+    - **Competitor Cards**:
+      - Display each competitor (including the user’s business) as a card.
+      - Each card should include:
+        - The business name (heading, black text, 18px bold Montserrat).
+        - Rank and keyword overlap (subheading, black text, 16px Montserrat).
+        - Review count and average rating (black text, 14px Montserrat).
+        - Categories (black text, 14px Montserrat, italicized).
+        - Open/Closed status (black text, 14px Montserrat, with a green dot for open, red dot for closed).
+        - Domain authority (black text, 14px Montserrat).
+        - A "View Profile" button linking to the business’s Google Maps profile (use the primary color #F28C38 for the button, with black text).
+      - Style the cards with a light gray background (#F5F5F5), a subtle border, and a hover effect (scale up slightly).
+  - **Interactivity**:
+    - **Filter to Sort Competitors**:
+      - Add a dropdown above the bar chart to sort competitors by different metrics:
+        - Rank (default).
+        - Review Count.
+        - Domain Authority.
+        - Keyword Overlap.
+      - Update the bar chart, radar chart, and competitor cards to reflect the sorted order.
+      - Style the dropdown with a white background, black text (#000000, 16px Montserrat), and a border in the primary color (#F28C38).
+    - **Detailed Comparison Pop-Up**:
+      - Allow users to click on a competitor card to open a pop-up with a detailed comparison.
+      - The pop-up should include:
+        - The radar chart comparing the user’s business and the selected competitor.
+        - A line graph showing the rank trends for both the user and the competitor over the past 30 days (use #F28C38 for the user, #E63946 for the competitor).
+        - A list of the competitor’s strengths (e.g., "More Reviews: 150 vs. 120").
+        - Ensure all text in the pop-up (headings, labels, graph text) is black (#000000, 16px Montserrat for body, 18px bold for headings).
+      - Style the pop-up with a white background, a border, and a close button (use #F28C38 for the close button with black text).
+    - **View Toggle**:
+      - Add a toggle button to switch between two views:
+        - "Overall Comparison": Show the bar chart and competitor cards.
+        - "Keyword Overlap": Show the heatmap for keyword overlap.
+      - Style the toggle button with the primary color (#F28C38) and black text (#000000, 16px Montserrat).
+  - **Design**:
+    - Use the app’s existing color scheme:
+      - Primary color: #F28C38 for buttons and highlights.
+      - Positive: #28A745 (Green).
+      - Negative: #E63946 (Red).
+      - Neutral: #CCCCCC (Gray).
+    - Ensure all text (headings, subheadings, labels, tooltips, etc.) is black (#000000):
+      - Headings: 20px bold Montserrat.
+      - Subheadings: 18px bold Montserrat.
+      - Body text: 16px Montserrat.
+      - Small text (e.g., in tooltips): 14px Montserrat.
+    - Add subtle animations using Framer Motion:
+      - Fade-in animation for the entire section when it loads.
+      - Scale animation on hover for the competitor cards, toggle button, and dropdown.
+
+### Testing
+- **Test Case 1: Data Display**:
+  - Select a campaign and keyword, and verify that the "Competitor Analysis" section displays:
+    - A bar chart comparing rank, review count, and domain authority.
+    - A radar chart in the pop-up comparing the user and a selected competitor.
+    - A heatmap for keyword overlap in the "Keyword Overlap" view.
+    - Competitor cards with all details (rank, reviews, categories, etc.).
+- **Test Case 2: Visual Elements**:
+  - Ensure all text in the bar chart, radar chart, heatmap, and competitor cards is black (#000000).
+  - Verify that the bar chart, radar chart, and heatmap use the correct colors for each metric.
+  - Check that the competitor cards display the open/closed status with the correct dot color.
+  - Confirm that the "View Profile" button links to the correct Google Maps profile.
+- **Test Case 3: Interactivity**:
+  - Test the sort dropdown and verify that the bar chart and competitor cards update according to the selected metric.
+  - Click on a competitor card and confirm that the pop-up opens with the radar chart, rank trend graph, and strengths list, all with black text.
+  - Test the view toggle between "Overall Comparison" and "Keyword Overlap" and ensure the section updates correctly.
+- **Test Case 4: Error Handling**:
+  - Test with a keyword that has no competitors and verify that the section displays a message like "No competitors found for this keyword" (in black text).
+  - Test with a failed DataForSEO API call for domain authority and ensure it defaults to 0 with a "Not Available" label (in black text).

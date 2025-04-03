@@ -1,0 +1,42 @@
+Update the left-hand sidebar menu in the React + Node.js SaaS application on Replit to reorganize the navigation structure, rename the brand from "FITNESS SEO" to "LOCALAUTHORITY", and ensure a clean user experience:
+
+- Backend (Node.js):
+  - No backend changes required for this update.
+
+- Frontend (React):
+  - Update the application branding:
+    - Replace "FITNESS SEO" (assumed current brand) with "LOCALAUTHORITY" at the top of the left-hand sidebar or header (e.g., as a logo or title).
+    - Use `#1C2526` text on a `#FFFFFF` background for the brand name, with `#F28C38` as an accent color for hover effects.
+  - Reorganize the left-hand sidebar:
+    - **Top Tier (Primary Actions)**:
+      - Dashboard
+      - Campaigns
+      - Posts
+      - Reviews
+    - **Middle Tier (Performance Analysis)**:
+      - GBP Audit
+      - Citations
+      - (Group under a collapsible header "Performance Analysis" with `#1C2526` text and `#F28C38` toggle button)
+    - **Bottom Tier (Strategic Tools)**:
+      - Optimization (GBP Insights)
+      - Reports
+      - (Group under a collapsible header "Strategic Tools" with `#1C2526` text and `#F28C38` toggle button)
+    - **Admin Section (Separate)**:
+      - Admin
+      - (Place at the bottom with a distinct separator, e.g., a horizontal line in `#D3D7D9`)
+  - Design Updates:
+    - Background: `#1C2526` to `#0D1214` gradient for the sidebar, `#FFFFFF` for the main content.
+    - Text: `#FFFFFF` for inactive items, `#F28C38` for active/hover items, `#1C2526` for main content text.
+    - Buttons: `#F28C38` with `#FFFFFF` text, hover `#F5A461` for collapsible headers and action buttons.
+    - Icons: `#F28C38` with `#1C2526` text/icon color in the main content.
+    - Use Framer Motion for smooth collapsible animations (fade-in for open, slide-up for close).
+  - Montserrat font: 24px bold for headers (e.g., "LOCALAUTHORITY", "Performance Analysis"), 16px for menu items.
+
+- Testing:
+  - Verify the brand name "LOCALAUTHORITY" displays correctly at the top.
+  - Test collapsible headers for "Performance Analysis" and "Strategic Tools" expand/collapse functionality.
+  - Ensure all menu items (Dashboard, Campaigns, Posts, Reviews, GBP Audit, Citations, Optimization, Reports, Admin) are accessible and styled consistently.
+  - Confirm UI responsiveness across screen sizes.
+
+- Deployment Notes:
+  - Update any hardcoded brand references (e.g., in HTML titles, meta tags) to "LOCALAUTHORITY".

@@ -1,0 +1,29 @@
+Enhance the Admin and Client Dashboards in the React + Node.js project, and improve the left-hand menu layout:
+- Backend:
+  - Add mock endpoints to fetch dashboard data:
+    - "/api/admin/dashboard": Returns total users, active subscriptions, API usage stats, recent activity (mock data).
+    - "/api/client/dashboard": Returns GBP ranking, review rating, engagement stats, pending actions, recent activity (mock data).
+- Frontend:
+  - Update the Left-Hand Sidebar:
+    - Group menu items under collapsible sections:
+      - Admin: "User Management" (Dashboard, Users, Subscriptions), "System Settings" (API Keys, Logout).
+      - Client: "GBP Insights" (Dashboard, Optimization, Rankings, Reviews), "Content Management" (Posts, Reports), "Competitive Analysis" (Citations, Competitors, Keywords), "Account" (Logout).
+    - Add a profile section at the top: Avatar (placeholder), user name (mock: "John Doe"), role (Admin/Client), and a dropdown for "Settings" and "Logout" (Heroicon 'ChevronDownIcon').
+    - Add a notifications bell (Heroicon 'BellIcon') with a dropdown for alerts (mock: "API key expiring in 3 days").
+    - Style: Background #006039, text #f4f4f2, active item #a37e2c with a neon glow (#9eca9e shadow), collapsible sections with Heroicon 'ChevronDownIcon'.
+  - Admin Dashboard (/admin/dashboard):
+    - Add KPI cards: Total Users, Active Subscriptions, API Usage (mock data), styled with gold borders (#a37e2c), off-white background (#f4f4f2).
+    - Add quick action buttons: "Add New User", "View API Status" (gold #a37e2c, Framer Motion hover: scale up).
+    - Add a "Recent Activity" log (mock: "New user added 1 hour ago") in a scrollable list (bg-[#c9c08f], text-[#006039]).
+    - Sub-menu options: "Overview", "Activity", "System Health" (mock for now).
+  - Client Dashboard (/client/dashboard):
+    - Add KPI cards: Current GBP Ranking, Review Rating, Engagement Stats, Pending Actions (mock data).
+    - Add an onboarding checklist: "Connect GBP", "Set Primary Keywords", "Schedule First Post" (mock progress: 2/3).
+    - Add a "Recent Activity" feed (mock: "New review received 2 hours ago").
+    - Add a "Quick Insights" mini-chart (Chart.js) for ranking trends (mock data, styled with #9eca9e and #a37e2c).
+    - Sub-menu options: "Overview", "Insights", "Onboarding" (mock for now).
+  - Design Enhancements:
+    - Right-hand pane background: Subtle gradient (#f4f4f2 to #c9c08f).
+    - KPI cards: Animated (Framer Motion: scale up on hover, fade-in on load), with subtle shadows.
+    - Charts: Use Chart.js for mini-charts, styled with Rolex colors.
+    - Maintain Montserrat font (24px bold headings, 16px body text).

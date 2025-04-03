@@ -1,0 +1,29 @@
+Update the existing FAQs Reply feature to ensure it is fully functional by integrating a default NLP service and supporting optional user-provided API keys for advanced functionality. Add missing endpoints and API calls without requiring a full rewrite.
+
+Updates Needed:
+
+Set Up Default NLP Service:
+Use spaCy (a free, open-source NLP library) as the default service for matching questions to FAQs. Implement basic similarity matching in the backend to identify the closest FAQ without requiring an API key.
+Ensure this default setup works out of the box when no user configuration is provided.
+Add Configuration for User-Provided APIs:
+Update the backend to include a configuration section where users can select an advanced NLP service (e.g., OpenAI or Hugging Face) and input their own API keys.
+If an API key is provided, switch from spaCy to the user-selected service for matching and reply generation.
+Implement Matching and Reply Logic:
+Create or update an endpoint (e.g., /match_faq) to:
+Accept an incoming question.
+Use spaCy (default) or the user-selected API to match it to a predefined FAQ.
+Return the matched FAQ and a confidence score (e.g., 0-100%).
+For suggested answers:
+By default (spaCy), return the exact FAQ answer.
+With an advanced API (e.g., OpenAI), call the API to generate a rephrased or contextually improved reply.
+Update Frontend:
+Display the suggested reply and its confidence score (e.g., "Suggested Reply: [answer] - Confidence: 92%").
+Add a "Manual Reply" button that appears if no match is found or if the confidence score is below a threshold (e.g., 80%).
+Handle Edge Cases:
+If no FAQ match is found (confidence too low), return a fallback response (e.g., "No matching FAQ found") and show the "Manual Reply" option.
+Ensure the endpoint handles errors gracefully if a user-provided API key is invalid.
+Implementation Notes:
+
+Backend: Add or update API calls for spaCy (local processing) and external services like OpenAI (e.g., POST /v1/completions if using OpenAI).
+Frontend: Update the UI to reflect the new endpoint responses (confidence score, reply, manual option).
+Testing: Verify the feature works with spaCy by default and switches to OpenAI when a valid API key is added.

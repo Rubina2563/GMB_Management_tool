@@ -1,0 +1,33 @@
+Instruct the "LOCALAUTHORITY" React + Node.js SaaS application on Replit to use the Google Places API for geo-grid mapping and duplicate listings, leveraging the shared Google API credentials set up in the admin panel.
+
+### Purpose of Google Places API
+- **Role**: Provides location data to support geo-grid mapping and duplicate listing detection.
+- **Use Cases**:
+  - **GBP Map Rankings Page**: Generate latitude and longitude coordinates for the 5x5 geo-grid centered on the GBP location.
+  - **Duplicate Listings Page**: Cross-reference place IDs with GBP listings to identify potential duplicates.
+  - **Keyword Insights Page**: Identify local search terms tied to specific locations for better keyword optimization.
+- **Field Testing Goal**: Ensure the geo-grid is accurately mapped and duplicate listings are correctly identified, supporting hyperlocal SEO analysis.
+
+### Backend (Node.js)
+- Update `/api/client/gbp-audit` endpoints to use the Google Places API:
+  - **General Logic**:
+    - Retrieve the shared `apiKey` from the stored credentials (e.g., `.env` or `apiCredentials` collection).
+    - Use the `googleapis` Node.js library or `axios` to make API calls to the Places API.
+  - **Endpoints**:
+    - `/api/client/gbp-audit/map-rankings`:
+      - Use the Places API to fetch the GBP location’s coordinates (lat/lng).
+      - Calculate the 5x5 geo-grid coordinates within a 1-mile radius.
+      - Return the grid data as part of the response: `{ gridData: [{ lat, lng, rank, inTop3 }, ...] }`.
+    - `/api/client/gbp-audit/duplicates`:
+      - Use the Places API to fetch place IDs for the business’s name and address.
+      - Cross-reference with GBP listings to identify duplicates.
+    - `/api/client/gbp-audit/keywords`:
+      - Use the Places API to fetch local search terms tied to the GBP location for keyword insights.
+  - **Error Handling**:
+    - If the API key is missing, return a 401 error: `{ error: "Google Places API not configured" }`.
+
+### Testing
+- Test the GBP Map Rankings page to ensure the 5x5 geo-grid is generated correctly using the Places API.
+- Test the Duplicate Listings page to verify that duplicates are identified accurately.
+- Test the Keyword Insights page to ensure local search terms are fetched correctly.
+- Ensure error handling works if the API key is invalid or missing.

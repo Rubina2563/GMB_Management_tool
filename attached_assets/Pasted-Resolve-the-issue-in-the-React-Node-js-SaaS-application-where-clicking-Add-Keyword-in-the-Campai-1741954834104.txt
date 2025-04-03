@@ -1,0 +1,137 @@
+Resolve the issue in the React + Node.js SaaS application where clicking "Add Keyword" in the Campaigns wizard resets the form and returns to the "Select Campaign" screen, and enhance the wizard implementation:
+
+- Frontend:
+  - Update the Campaigns wizard in /client/campaigns/CampaignsPage.tsx:
+    - Replace the keyword input `<form>` with a `<div>`:
+      ```tsx
+      <div className="flex w-full items-center space-x-2">
+        <div className="relative flex-1">
+          <Input
+            type="text"
+            placeholder="Enter a keyword..."
+            value={keywordInput}
+            onChange={(e) => setKeywordInput(e.target.value)}
+            className="w-full border-[#F28C38]/20 focus:border-[#F28C38] bg-[#1C2526] text-white"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                addKeyword();
+              }
+            }}
+          />
+        </div>
+        <Button
+          type="button"
+          onClick={addKeyword}
+          className="bg-[#F28C38] hover:bg-[#F5A461] text-white"
+        >
+          Add Keyword
+        </Button>
+      </div>
+
+Refactor the addKeyword function:
+const addKeyword = () => {
+  const keyword = keywordInput.trim();
+  if (!keyword) return;
+
+  const newKeyword = {
+    keyword,
+    is_primary: currentKeywordTag === 'primary',
+    tag: currentKeywordTag,
+  };
+
+  setCampaignData((prevData) => {
+    const updatedKeywords = [...(prevData.keywords || []), newKeyword];
+    setCampaignKeywords(updatedKeywords);
+    setKeywordInput('');
+    toast({
+      title: "Keyword Added",
+      description: `"${keyword}" has been added to your campaign.`,
+      variant: "default",
+    });
+    return {
+      ...prevData,
+      keywords: updatedKeywords,
+    };
+  });
+};
+
+Refactor the removeKeyword function
+
+const removeKeyword = (index: number) => {
+  setCampaignData((prevData) => {
+    const updatedKeywords = (prevData.keywords || []).filter((_, i) => i !== index);
+    setCampaignKeywords(updatedKeywords);
+    toast({
+      title: "Keyword Removed",
+      description: "Keyword has been removed from your campaign.",
+      variant: "default",
+    });
+    return {
+      ...prevData,
+      keywords: updatedKeywords,
+    };
+  });
+};
+
+Update wizard navigation:
+Add state: const [isKeywordStepComplete, setIsKeywordStepComplete] = useState(false);
+Modify goToNextStep and goToPreviousStep
+
+const goToNextStep = () => {
+  setTimeout(() => {
+    const nextStep = getNextStep(currentStep);
+    if (nextStep && currentStep === 3) {
+      setIsKeywordStepComplete(true);
+    }
+    setCurrentStep(nextStep);
+  }, 300);
+};
+
+const goToPreviousStep = () => {
+  setTimeout(() => {
+    const prevStep = getPreviousStep(currentStep);
+    setCurrentStep(prevStep);
+  }, 300);
+};
+
+
+Update renderStep to guard the keyword step
+const renderStep = () => {
+  switch (currentStep) {
+    case 1:
+      return <SelectCampaignStep onNext={goToNextStep} />;
+    case 2:
+      return <SetMetricsStep onNext={goToNextStep} onPrev={goToPreviousStep} />;
+    case 3:
+      return (
+        <AddKeywordsStep
+          keywords={campaignKeywords}
+          addKeyword={addKeyword}
+          removeKeyword={removeKeyword}
+          onNext={() => isKeywordStepComplete && goToNextStep()}
+          onPrev={goToPreviousStep}
+        />
+      );
+    // ... other steps
+    default:
+      return null;
+  }
+};
+
+Add a visual indicator for added keywords (e.g., a success badge with #F28C38 background next to the keyword list).
+Ensure the wizard progresses to the next step (e.g., Step 4) only after keywords are added and "Next" is clicked, not on keyword addition alone.
+Test the flow:
+Add a keyword, verify it appears in the list, and ensure clicking "Next" moves to Step 4.
+Confirm no reset to Step 1 occurs.
+Design:
+Use the new palette: #1C2526 (background), #F28C38 (buttons), #F5A461 (hover), #FFFFFF (text), #D3D7D9 (secondary), #6B5B95 (accents), #E63946 (alerts).
+Maintain Montserrat font and Framer Motion animations.
+Backend:
+Verify that "/api/client/campaigns/create" accepts the updated keyword data structure (keyword, is_primary, tag).
+Ensure no server-side logic resets the wizard state.
+Debugging:
+Log currentStep and isKeywordStepComplete before and after addKeyword to trace the reset.
+Use console.log or React DevTools to confirm state updates.
+If the issue persists, check the parent component (e.g., CampaignsPage.tsx) for unintended state resets on child component updates.
+text

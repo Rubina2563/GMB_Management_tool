@@ -1,0 +1,38 @@
+Enhance the GBP Audit feature in the React + Node.js SaaS application on Replit by adding a posts analysis section with keyword/service gap analysis:
+
+- Backend (Node.js):
+  - Update "/api/client/gbp/audit" to include posts analysis:
+    - Fetch post data from /client/posts (SQLite `posts` table):
+      - Total number of posts.
+      - Posting frequency (posts/week, calculated from post dates).
+      - Last post age (days since last post).
+      - Post types (Updates, Offers, Events, Products) and photo inclusion (>50% should have photos).
+    - Keyword/Service Gap Analysis:
+      - Extract keywords and services from GBP (categories, services, primary keyword from Campaigns).
+      - Analyze post content for mentions of these keywords/services (e.g., if "emergency plumbing" is a service, check if posts mention it).
+      - Identify gaps (e.g., "No posts mention 'emergency plumbing'").
+    - Evaluate:
+      - Frequency: Recommend >1 post/week.
+      - Last Post Age: Suggest <30 days.
+      - Photo Inclusion: Recommend >50%.
+      - Keyword Coverage: Highlight missing keywords/services.
+    - Add to audit report: Posts score (0-20) and recommendations (e.g., "Post weekly", "Add posts about 'emergency plumbing'").
+  - Update SQLite `gbp_audits` table to store posts analysis (e.g., `posts_info` JSON field).
+
+- Frontend (React):
+  - Update /client/gbp-audit:
+    - Add "Posts Analysis" section to the audit report:
+      - Display metrics: Total posts, frequency, last post age, types, photo inclusion, keyword/service gaps.
+      - Recommendations: List with bullets (#1C2526 text), "Implement" button (#F28C38 with #FFFFFF text, hover #F5A461) per suggestion (mock action with toast).
+    - Update overall score (0-100): Assign 20% weight to posts (e.g., 4 metrics checked, 3 pass = 15/20).
+  - Design:
+    - Background: #FFFFFF.
+    - Text: #1C2526 (primary), #D3D7D9 (secondary).
+    - Framer Motion: Fade-in for cards, scale on hover for buttons.
+    - Montserrat font: 24px bold headings, 16px body.
+
+- Testing:
+  - Verify posts data is pulled accurately from /client/posts.
+  - Test keyword/service gap analysis accuracy.
+  - Confirm recommendations are actionable.
+  - Ensure overall score updates correctly.

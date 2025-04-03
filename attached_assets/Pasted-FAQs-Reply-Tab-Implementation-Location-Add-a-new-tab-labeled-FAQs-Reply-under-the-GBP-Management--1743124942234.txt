@@ -1,0 +1,99 @@
+FAQs Reply Tab Implementation
+Location
+Add a new tab labeled "FAQs Reply" under the "GBP Management" menu in the /client/gbp-management/ section of your platform, consistent with the existing folder structure (e.g., where Image Management resides).
+
+Objective
+The goal is to allow users to:
+
+Manage a list of Frequently Asked Questions (FAQs) with corresponding answers.
+Automate replies to matching questions on their Google Business Profile (GBP) using natural language processing (NLP).
+However, since the GBP API does not support automated posting of replies, the feature will generate suggested replies and provide a manual posting option.
+Design Specifications
+Background: White (#FFFFFF).
+Text: Black (#000000), 16px Montserrat font.
+Tab Bar:
+Unselected: Black background (#000000), white text (#FFFFFF).
+Selected: Orange background (#F28C38), white text (#FFFFFF).
+Buttons: Orange background (#F28C38) with white text (#FFFFFF).
+Backend Requirements
+Endpoint 1: /api/client/gbp/faqs
+Purpose: Manage the user’s FAQ list.
+Methods:
+GET: Retrieve the list of FAQs.
+POST: Add a new FAQ.
+PUT: Update an existing FAQ.
+DELETE: Remove an FAQ.
+Request/Response Format:
+json
+
+Collapse
+
+Wrap
+
+Copy
+{
+  "question": "string",
+  "answer": "string"
+}
+Storage: Store FAQs in your database, linked to the user’s GBP account.
+Endpoint 2: /api/client/gbp/automated-replies
+Purpose: Process new GBP questions and suggest replies.
+Method: POST
+Logic:
+Fetch new questions from GBP using the GBP API (e.g., the locations.questions.list endpoint).
+Use an NLP library (e.g., spaCy or Hugging Face transformers) to match incoming questions to predefined FAQs based on semantic similarity.
+Generate suggested replies for matches, including a confidence score.
+Manual Limitation: Since the GBP API does not allow automated posting of replies, return the suggested replies for manual action by the user.
+Response Format:
+json
+
+Collapse
+
+Wrap
+
+Copy
+[
+  {
+    "question": "string",
+    "suggestedAnswer": "string",
+    "faqMatch": "string",
+    "confidenceScore": float, // e.g., 0.92
+    "timestamp": "ISO string",
+    "gbpQuestionUrl": "string" // Link to the GBP question page
+  }
+]
+Frontend Design
+Layout
+FAQs List:
+An editable table or list where users can add, edit, or delete FAQs.
+Columns: Question, Answer, Actions (Edit/Delete).
+Reply Log:
+A table displaying suggested replies for new GBP questions.
+Columns: Question, Matched FAQ, Suggested Answer, Confidence Score, Action (Manual Reply).
+Manual Reply Button:
+A button labeled "Copy Reply" that copies the suggested answer to the clipboard and provides a link to the GBP question page for manual posting.
+Interactivity
+Real-Time Updates: Fetch new questions and display suggested replies dynamically (e.g., via polling or WebSocket).
+Input Validation: Enforce character limits (e.g., GBP’s 10,000-character limit per answer) and required fields for FAQs.
+Manual Fallback: If no FAQ match is found or confidence is low (< 80%), allow users to write a custom reply.
+Manual Posting Prompt
+Since automated replies aren’t supported by the GBP API, display a message like:
+
+"Automated replies are not supported by Google Business Profile. Please copy the suggested reply below and post it manually on GBP by clicking ."
+
+Unique Features
+Confidence Score: Show the NLP match confidence (e.g., 92%) for each suggested reply to help users assess reliability.
+FAQ Suggestions: Use AI to analyze frequent GBP questions and suggest new FAQs (e.g., “Add ‘What are your hours?’ to FAQs”).
+Bulk FAQ Import: Allow users to upload a CSV file (e.g., question,answer) to populate FAQs quickly.
+Testing
+FAQ Management: Add, edit, and delete FAQs, then verify they persist in the database and display correctly.
+NLP Matching: Test with sample GBP questions (e.g., “What time do you close?”) and confirm appropriate FAQ matches and confidence scores.
+Manual Reply: Ensure the “Copy Reply” button works and links to the correct GBP question page.
+Notes on GBP API Alignment
+The GBP API allows fetching questions (via locations.questions.list) but does not support posting replies programmatically. Thus, the FAQs Reply feature focuses on:
+Fetching questions and matching them to FAQs using NLP.
+Generating suggested replies with confidence scores.
+Providing a manual posting workflow as a workaround.
+By building this feature in the /client/gbp-management/ section, it integrates seamlessly with your existing structure (e.g., alongside Image Management). The manual reply option ensures usability despite GBP API limitations, while NLP and unique features like FAQ suggestions enhance the tool’s value.
+
+Let me know if you’d like me to elaborate further or adjust anything! I’ve focused on the FAQs Reply feature here as per your clarification, but I can also provide a detailed response for the Description Generator feature if needed—just confirm!

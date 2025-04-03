@@ -1,0 +1,235 @@
+Step 1: Add Campaigns Screen:
+Route: /client/campaigns
+Menu Update:
+Update the left-hand menu under "Local Rankings" to include a "Campaigns" item:
+javascript
+
+Collapse
+
+Wrap
+
+Copy
+{
+  label: 'Campaigns',
+  path: '/client/campaigns',
+  icon: <CampaignIcon />
+}
+Components:
+Campaign List:
+javascript
+
+Collapse
+
+Wrap
+
+Copy
+const [campaigns, setCampaigns] = useState([]);
+const [showCreateModal, setShowCreateModal] = useState(false);
+
+useEffect(() => {
+  const fetchCampaigns = async () => {
+    const response = await fetch('/api/client/campaigns/list', {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    });
+    const data = await response.json();
+    setCampaigns(data.campaigns);
+  };
+  fetchCampaigns();
+}, []);
+
+return (
+  <div className="p-6 bg-[#FFFFFF]">
+    <h1 className="text-3xl font-bold text-[#1C2526] font-montserrat mb-6">Campaigns</h1>
+    <button
+      onClick={() => setShowCreateModal(true)}
+      className="bg-[#F28C38] text-white px-4 py-2 rounded hover:bg-[#F5A461] mb-4"
+    >
+      Add New Campaign
+    </button>
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {campaigns.map((campaign) => (
+        <div key={campaign._id} className="p-4 border rounded-lg shadow-sm">
+          <h2 className="text-xl font-bold text-[#1C2526]">{campaign.name}</h2>
+          <p className="text-[#1C2526]">Location: {campaign.location}</p>
+          <p className="text-[#1C2526]">Keywords: {campaign.keywords.join(', ')}</p>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+Create Campaign Modal:
+javascript
+
+Collapse
+
+Wrap
+
+Copy
+const [formData, setFormData] = useState({
+  name: '',
+  keywords: [],
+  location: '',
+  radiusMiles: 5,
+  gridSize: '5x5',
+  gridShape: 'rectangular',
+  metrics: ['AFPR', 'TGRM', 'TSS']
+});
+
+const handleSubmit = async () => {
+  const response = await fetch('/api/client/campaigns/create', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${localStorage.getItem('token')}`
+    },
+    body: JSON.stringify({
+      ...formData,
+      keywords: formData.keywords.split(',').map(kw => kw.trim())
+    })
+  });
+  if (response.ok) {
+    setShowCreateModal(false);
+    // Refresh campaigns
+    fetchCampaigns();
+  }
+};
+
+return (
+  {showCreateModal && (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"
+    >
+      <div className="bg-white p-6 rounded-lg shadow-lg max-w-lg w-full">
+        <h2 className="text-2xl font-bold mb-4 text-[#1C2526] font-montserrat">Create Campaign</h2>
+        <input
+          type="text"
+          placeholder="Campaign Name"
+          value={formData.name}
+          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+          className="w-full p-2 mb-4 border rounded"
+        />
+        <input
+          type="text"
+          placeholder="Keywords (comma-separated)"
+          value={formData.keywords}
+          onChange={(e) => setFormData({ ...formData, keywords: e.target.value })}
+          className="w-full p-2 mb-4 border rounded"
+        />
+        <input
+          type="text"
+          placeholder="Location (e.g., Phoenix, AZ)"
+          value={formData.location}
+          onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+          className="w-full p-2 mb-4 border rounded"
+        />
+        <input
+          type="number"
+          placeholder="Radius (miles)"
+          value={formData.radiusMiles}
+          onChange={(e) => setFormData({ ...formData, radiusMiles: parseInt(e.target.value) })}
+          className="w-full p-2 mb-4 border rounded"
+        />
+        <select
+          value={formData.gridSize}
+          onChange={(e) => setFormData({ ...formData, gridSize: e.target.value })}
+          className="w-full p-2 mb-4 border rounded"
+        >
+          <option value="3x3">3x3</option>
+          <option value="5x5">5x5</option>
+          <option value="7x7">7x7</option>
+        </select>
+        <select
+          value={formData.gridShape}
+          onChange={(e) => setFormData({ ...formData, gridShape: e.target.value })}
+          className="w-full p-2 mb-4 border rounded"
+        >
+          <option value="rectangular">Rectangular</option>
+          <option value="circular">Circular</option>
+        </select>
+        <div className="flex justify-end space-x-2">
+          <button
+            onClick={() => setShowCreateModal(false)}
+            className="bg-gray-300 text-[#1C2526] px-4 py-2 rounded hover:bg-gray-400"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSubmit}
+            className="bg-[#F28C38] text-white px-4 py-2 rounded hover:bg-[#F5A461]"
+          >
+            Create
+          </button>
+        </div>
+      </div>
+    </motion.div>
+  )}
+);
+Step 2: Add Campaign Selector in the Header:
+Update the Header Component (likely Header.js or similar):
+javascript
+
+Collapse
+
+Wrap
+
+Copy
+const [campaigns, setCampaigns] = useState([]);
+const [selectedCampaign, setSelectedCampaign] = useState(null);
+
+useEffect(() => {
+  const fetchCampaigns = async () => {
+    const response = await fetch('/api/client/campaigns/list', {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    });
+    const data = await response.json();
+    setCampaigns(data.campaigns);
+
+    const selectedResponse = await fetch('/api/client/campaigns/selected', {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    });
+    const selectedData = await selectedResponse.json();
+    setSelectedCampaign(selectedData.campaign);
+  };
+  fetchCampaigns();
+}, []);
+
+const handleCampaignChange = async (campaignId) => {
+  const response = await fetch('/api/client/campaigns/select', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${localStorage.getItem('token')}`
+    },
+    body: JSON.stringify({ campaignId })
+  });
+  if (response.ok) {
+    const selected = campaigns.find(c => c._id === campaignId);
+    setSelectedCampaign(selected);
+    // Emit an event or refresh the page to update other screens
+    window.location.reload();
+  }
+};
+
+return (
+  <header className="flex justify-between items-center p-4 bg-[#1C2526] text-white">
+    <h1 className="text-xl font-bold font-montserrat">LOCALAUTHORITY</h1>
+    <div>
+      <select
+        value={selectedCampaign?._id || ''}
+        onChange={(e) => handleCampaignChange(e.target.value)}
+        className="bg-[#F28C38] text-white p-2 rounded"
+      >
+        <option value="">Select Campaign</option>
+        {campaigns.map((campaign) => (
+          <option key={campaign._id} value={campaign._id}>{campaign.name}</option>
+        ))}
+      </select>
+    </div>
+  </header>
+);
+Testing
+Verify that the "Campaigns" screen is accessible under "Local Rankings" and displays a list of campaigns.
+Test creating a new campaign with various configurations (keywords, location, etc.).
+Ensure the campaign selector dropdown in the header updates the selected campaign and refreshes the app.

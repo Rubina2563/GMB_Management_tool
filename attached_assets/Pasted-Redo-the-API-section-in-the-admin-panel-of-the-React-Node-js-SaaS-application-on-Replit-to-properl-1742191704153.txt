@@ -1,0 +1,86 @@
+Redo the API section in the admin panel of the React + Node.js SaaS application on Replit to properly configure the Google Places API and DataForSEO API, ensuring all endpoints are defined, authenticated, and integrated with the client panel for campaign/geo-grid and backlink/keyword data:
+
+- Backend (Node.js):
+  - Create a new admin route: `/admin/api-config`.
+  - Configure API Authentication:
+    - **Google Places API**:
+      - Use API key authentication (stored in environment variables: `GOOGLE_PLACES_API_KEY`).
+      - Set up OAuth 2.0 for GBP data access (optional, mock redirect with `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` from environment variables).
+      - Endpoint: `/api/admin/google-places-config`.
+      - Functionality: Save and validate API key, test connectivity (mock response with place data), and store in SQLite (`api_configs` table: api_name, api_key, status).
+    - **DataForSEO API**:
+      - Use email and API key combination (stored in environment variables: `DATAFORSEO_EMAIL`, `DATAFORSEO_API_KEY`).
+      - Endpoint: `/api/admin/dataforseo-config`.
+      - Functionality: Save and validate email/API key pair, test connectivity (mock response with backlink data), and store in SQLite (`api_configs` table).
+  - Define Endpoints for Campaign/Geo-Grids (Google Places API):
+    - `/api/client/campaigns/geo-grids`: Fetch geogrid data for campaign setup.
+      - Input: GBP location (latitude, longitude), geo-grid size (e.g., 7x7), distance between points (e.g., 1 mile).
+      - Use Google Places API to pull place data for each grid point (mock: return 10 businesses per point with name, address, rating).
+      - Return: Array of geogrid points with business data.
+    - Rate Limit: 2000 requests/minute (mock implementation).
+  - Define Endpoints for Backlink/Keyword Data (DataForSEO API):
+    - `/api/client/gbp/backlinks`: Fetch backlink data for a GBP-linked website.
+      - Input: Website URL (from GBP website link).
+      - Use DataForSEO Backlinks API (e.g., `/v3/backlinks/backlinks`) to get backlinks, referring domains, page rank (>500 for authority links).
+      - Return: JSON with total backlinks, citation links (directories like yelp.com), authority links (dofollow, high rank), and gaps.
+    - `/api/client/keywords/rankings`: Fetch keyword rankings for GBP primary keywords.
+      - Input: Keywords (from Campaigns), location (GBP address).
+      - Use DataForSEO Rank Tracker API to get local pack rankings (mock: return rank #1-5 for "plumber in [city]").
+      - Return: JSON with keyword, rank, and competitor data.
+    - Rate Limit: 100 tasks/POST call, up to 2000 calls/minute (mock implementation).
+  - Store API configurations and usage logs in SQLite (`api_usage` table: api_name, endpoint, timestamp, credits_used).
+  - Credit System: 1 credit per geo-grid request, 1 credit per backlink/keyword request (deduct from mock balance).
+
+- Frontend (React) - Admin Panel (/admin/api-config):
+  - Left-Hand Sidebar: Retain gradient (#1C2526 to #0D1214), text #FFFFFF, active item "API Config" in #F28C38.
+  - Right-Hand Pane:
+    - Background: #FFFFFF.
+    - Text: #1C2526 (primary), #D3D7D9 (secondary).
+    - Buttons: #F28C38 with #FFFFFF text, hover #F5A461.
+    - Icons: #F28C38 with #1C2526 text/icon color.
+  - Layout:
+    - **Google Places API Config**:
+      - Input fields: API Key (text), Client ID (optional), Client Secret (optional).
+      - "Save & Test" button (#F28C38) triggers `/api/admin/google-places-config`.
+      - Status: Display "Connected" (#F28C38) or "Failed" (#E63946) with toast notification.
+    - **DataForSEO API Config**:
+      - Input fields: Email, API Key.
+      - "Save & Test" button (#F28C38) triggers `/api/admin/dataforseo-config`.
+      - Status: Display "Connected" (#F28C38) or "Failed" (#E63946) with toast notification.
+    - Usage Logs: Table showing API calls, endpoints, and credits used (#1C2526 text).
+  - Design:
+    - Framer Motion: Fade-in for forms, scale on hover for buttons.
+    - Montserrat font: 24px bold headings, 16px body.
+
+- Frontend (React) - Client Panel Integration:
+  - Update /client/campaigns (Campaign Setup, Step 3):
+    - Enhance "Geo-Grid Size" and "Distance Between Points" with real-time data:
+      - On selection (e.g., 7x7, 1 mile), call `/api/client/campaigns/geo-grids` to fetch geogrid data.
+      - Display preview: Map with grid points and top 10 businesses per point (mock map using Google Maps JavaScript API, #FFFFFF background).
+    - Add "Refresh Geo-Data" button (#F28C38) to re-fetch data.
+  - Update /client/gbp-audit:
+    - Add "Backlink Audit" section:
+      - "Run Backlink Audit" button (#F28C38) triggers `/api/client/gbp/backlinks`.
+      - Display: Total backlinks, citation links (e.g., Yelp), authority links, gaps (e.g., "Missing BBB citation").
+    - Add "Keyword Rankings" section:
+      - "Check Rankings" button (#F28C38) triggers `/api/client/keywords/rankings`.
+      - Display: Keyword, rank, competitor data in a table (#1C2526 text).
+  - Notifications:
+    - Toast (bg-#F28C38, text-#FFFFFF) for successful config ("API connected"), data fetch ("Geo-grid data updated"), or errors ("Failed to connect, check credentials").
+    - Credit deduction toast (e.g., "1 credit deducted. Remaining: [balance]").
+
+- Interdependencies:
+  - Link geo-grid data to Campaigns for geo-targeting.
+  - Link backlink/keyword data to GBP Audit for citation and ranking insights.
+  - Sync API usage to Reports for PDF export.
+
+- Testing (Replit Environment):
+  - Verify Google Places API key and OAuth setup (mock responses with sample geogrid data).
+  - Test DataForSEO email/API key authentication (mock responses with backlink/keyword data).
+  - Confirm endpoint functionality for geo-grids, backlinks, and keywords.
+  - Ensure credit deductions and UI consistency with existing design.
+  - Test admin panel updates and client panel integration.
+
+- Deployment Notes:
+  - Add environment variables in Replit: `GOOGLE_PLACES_API_KEY`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `DATAFORSEO_EMAIL`, `DATAFORSEO_API_KEY`.
+  - Mock API responses if keys are unavailable (e.g., 10 businesses for geo-grids, 20 backlinks for DataForSEO).

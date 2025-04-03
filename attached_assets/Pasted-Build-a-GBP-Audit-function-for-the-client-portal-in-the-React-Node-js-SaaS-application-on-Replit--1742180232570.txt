@@ -1,0 +1,62 @@
+Build a GBP Audit function for the client portal in the React + Node.js SaaS application on Replit, allowing users to connect or select a GBP and perform a comprehensive audit with actionable insights:
+
+- Backend (Node.js):
+  - Add endpoints:
+    - "/api/client/gbp/connect": Initiate Google OAuth 2.0 flow to connect a new GBP (mock Google API response with access token and profile data: name, address, category, reviews, posts). Store connected GBP data in SQLite (`gbp_profiles` table: gbp_id, user_id, name, address, category, token).
+    - "/api/client/gbp/select": List all GBPs linked to the user’s active campaigns (cross-reference with `campaigns` table) for selection. Return a dropdown-friendly array of {gbp_id, name, address}.
+    - "/api/client/gbp/audit": Perform a full audit on the selected/connected GBP:
+      - Fetch data (mock Google Business Profile API): business name, address, phone, website, category, hours, photos, reviews (count, avg rating), posts (count, last updated), Q&A (count), and competitor data (top 5 nearby GBPs by ranking for primary keyword).
+      - Evaluate metrics:
+        - Business Details: Check NAP (Name, Address, Phone) consistency, category relevance, description completeness (min 750 chars), photo count (>5), hours updated (last 30 days).
+        - Reviews: Count (>50), avg rating (>4.0), response rate (>80%).
+        - Posts: Frequency (>1/week), last post age (<30 days), photo inclusion (>50% posts).
+        - Competitors: Compare metrics (e.g., reviews, ratings) and suggest gaps.
+      - Return audit report: JSON with overall score (0-100), category scores (Business Details, Reviews, Posts), and recommendations (e.g., "Add 20 more reviews", "Update posts weekly").
+    - "/api/client/gbp/insights": Fetch historical audit data for trends (mock: last 3 audits).
+  - Store audit results in SQLite (`gbp_audits` table: audit_id, gbp_id, timestamp, score, details, recommendations).
+  - Implement credit system: 1 credit per audit (deduct from mock balance).
+
+- Frontend (React):
+  - Add a new section under /client/gbp-audit:
+    - Left-Hand Sidebar: Retain gradient (#1C2526 to #0D1214), text #FFFFFF, active item "GBP Audit" in #F28C38.
+    - Right-Hand Pane:
+      - Background: #FFFFFF.
+      - Text: #1C2526 (primary), #D3D7D9 (secondary).
+      - Buttons: #F28C38 with #FFFFFF text, hover #F5A461.
+      - Icons: #F28C38 with #1C2526 text/icon color.
+  - Layout:
+    - Connect/Select GBP:
+      - "Connect New GBP" button (#F28C38) triggers OAuth flow (mock redirect with success toast: "GBP connected successfully").
+      - "Select Existing GBP" dropdown (populated from "/api/client/gbp/select", styled with #F28C38 border on focus).
+      - "Run Audit" button (#F28C38) triggers "/api/client/gbp/audit" after GBP selection.
+    - Audit Report:
+      - Display overall score (e.g., "85/100") in a large card (glassmorphism: rgba(255, 255, 255, 0.8), blur(10px), border #F28C38).
+      - Breakdown: Cards for Business Details, Reviews, Posts (each with score, status icon #F28C38 for pass, #E63946 for fail).
+      - Recommendations: List with bullets (#1C2526 text), "Implement" button (#F28C38) per suggestion (mock action with toast).
+    - Insights:
+      - Line chart (Chart.js, #6B5B95) showing score trends over time (fetch from "/api/client/gbp/insights").
+      - "Download PDF" button (#F28C38) generates a mock report (js-pdf).
+  - Notifications:
+    - Toast (bg-#F28C38, text-#FFFFFF) for audit start ("Audit in progress..."), completion ("Audit complete. Score: 85"), and credit deduction ("1 credit deducted. Remaining: [balance]").
+    - Error toast (bg-#E63946, text-#FFFFFF) for failed audits.
+
+- Design:
+  - Use #F28C38 for buttons/icons, #6B5B95 for charts, #E63946 for alerts.
+  - Framer Motion: Fade-in for cards, scale on hover for buttons.
+  - Montserrat font: 24px bold headings, 16px body.
+
+- Interdependencies:
+  - Link GBP data to Campaigns for audit context.
+  - Sync audit results to Reports for PDF export.
+
+- Testing (Replit Environment):
+  - Verify OAuth flow (mock) connects GBP and stores data.
+  - Test GBP selection from Campaigns.
+  - Validate audit metrics and recommendations.
+  - Ensure credit deduction (1 credit) and balance updates.
+  - Test PDF export and chart rendering.
+  - Confirm color consistency with existing sections.
+
+- Deployment Notes:
+  - Use Replit’s environment variables for API keys (e.g., GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET).
+  - Mock Google API responses with sample data (e.g., 5 reviews, 3 posts, 2 competitors) to simulate real-world audits.

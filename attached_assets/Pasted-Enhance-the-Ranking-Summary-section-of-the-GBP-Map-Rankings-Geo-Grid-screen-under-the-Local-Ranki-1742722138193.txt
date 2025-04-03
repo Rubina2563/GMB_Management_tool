@@ -1,0 +1,120 @@
+Enhance the "Ranking Summary" section of the GBP Map Rankings Geo-Grid screen under the "Local Rankings" menu in the "LOCALAUTHORITY" React + Node.js SaaS application on Replit. The current section displays basic metrics (Average First Page Rank, Grid Rank Mean, Top Spot Share) and text-based "Opportunity Areas" and "Recommended Actions." Improve this section by adding more data points, visual elements, and interactivity to make it more comprehensive, visually appealing, and user-friendly.
+
+### Objective
+- **Purpose**: Transform the "Ranking Summary" section into a more insightful and engaging component by:
+  - Adding new data points to provide a deeper understanding of the geo-grid performance.
+  - Incorporating visual elements like charts, progress bars, and highlighted cards to make the data more engaging.
+  - Introducing interactivity to allow users to explore the data and interact with the map.
+- **Field Testing Goal**: Ensure the "Ranking Summary" section provides actionable insights, is visually appealing, and allows users to interact with the data (e.g., zooming the map to specific areas).
+
+### Backend Requirements
+- **Step 1: Enhance the Existing Endpoint for Geo-Grid Rankings**:
+  - **Endpoint**: Use the existing endpoint that serves the GBP Map Rankings Geo-Grid screen data (previously identified as the endpoint for fetching geo-grid rankings under the "Local Rankings" menu).
+  - **Purpose**: Update the endpoint to include additional data points for the "Ranking Summary" section.
+  - **New Data Points to Return**:
+    - **Rank Distribution**: An object showing the percentage of grid points in each rank range:
+      - "1-3": Percentage of grid points with ranks 1-3.
+      - "4-10": Percentage of grid points with ranks 4-10.
+      - "11-20": Percentage of grid points with ranks 11-20.
+      - ">20": Percentage of grid points with ranks greater than 20.
+      - Example: `{ "1-3": 20, "4-10": 30, "11-20": 40, ">20": 10 }`.
+    - **Top Grid Points**: An array of the top 3 grid points with the best ranks, including their latitude, longitude, and rank.
+      - Example: `[{ lat: 33.45, lng: -112.07, rank: 1 }, { lat: 33.46, lng: -112.08, rank: 2 }, { lat: 33.44, lng: -112.06, rank: 3 }]`.
+    - **Weakest Grid Points**: An array of the 3 grid points with the worst ranks, including their latitude, longitude, and rank.
+      - Example: `[{ lat: 33.42, lng: -112.05, rank: 18 }, { lat: 33.41, lng: -112.04, rank: 19 }, { lat: 33.43, lng: -112.03, rank: 20 }]`.
+    - **Previous Metrics**: An object containing the metrics (AFPR, TGRM, TSS) from the previous scan of the same keyword in the same campaign, for comparison.
+      - Example: `{ afpr: 2.5, tgrm: 3.8, tss: 15 }`.
+      - Fetch this from the existing `rankingHistory` collection by finding the most recent scan prior to the current one.
+    - **Keyword Difficulty**: A number representing the keyword difficulty score for the selected keyword, fetched from the DataForSEO API.
+      - Example: `65` (on a scale of 0-100, where higher means more competitive).
+  - **Logic**:
+    - After calculating the existing geo-grid data and metrics (AFPR, TGRM, TSS), compute the additional data points:
+      - **Rank Distribution**: Iterate through the geo-grid data to count the number of grid points in each rank range, then convert these counts to percentages based on the total number of grid points.
+      - **Top and Weakest Grid Points**: Sort the geo-grid data by rank in ascending order to identify the top 3 (best) and bottom 3 (worst) grid points.
+      - **Previous Metrics**: Query the `rankingHistory` collection for the most recent scan of the same keyword in the same campaign (excluding the current scan), and extract the metrics.
+      - **Keyword Difficulty**: Make an API call to DataForSEO to fetch the keyword difficulty score for the selected keyword. Use the existing DataForSEO API integration to make this call, ensuring proper error handling (e.g., return 0 if the API call fails).
+    - Include these new data points in the response alongside the existing data (geo-grid data, AFPR, TGRM, TSS, and API used).
+
+### Frontend Requirements
+- **Step 1: Redesign the "Ranking Summary" Section**:
+  - **Location**: Update the "Ranking Summary" section, which is currently displayed below the geo-grid map in the GBP Map Rankings screen under the "Local Rankings" menu.
+  - **New Data Points to Display**:
+    - **Rank Distribution**: Show the percentage of grid points in each rank range (1-3, 4-10, 11-20, >20).
+    - **Top Performing Grid Points**: Display the top 3 grid points with the best ranks, including their coordinates and rank.
+    - **Weakest Areas**: Display the 3 grid points with the worst ranks, including their coordinates and rank.
+    - **Comparison to Previous Scan**: Show the change in AFPR, TGRM, and TSS compared to the previous scan (e.g., +0.5, -1.2).
+    - **Keyword Difficulty**: Display the keyword difficulty score with a label indicating its competitiveness (e.g., "High" for scores > 60, "Medium" for 30-60, "Low" for < 30).
+  - **Visual Elements**:
+    - **Donut Chart for Rank Distribution**:
+      - Display a donut chart showing the percentage of grid points in each rank range.
+      - Use the following colors for each range:
+        - Rank 1-3: #28A745 (Green).
+        - Rank 4-10: #F5A461 (Yellow).
+        - Rank 11-20: #E63946 (Red).
+        - Rank >20: #CCCCCC (Gray).
+      - Include a legend with the rank ranges and their corresponding colors.
+      - Add a tooltip that shows the exact percentage when hovering over each segment.
+    - **Progress Bars for Metrics**:
+      - Display AFPR, TGRM, and TSS as progress bars instead of plain numbers.
+      - Scale the progress bars from 0 to 100 for TSS (as it’s a percentage), and from 0 to 20 for AFPR and TGRM (as they are rank-based).
+      - Color-code the bars based on performance:
+        - Green (#28A745) for good performance (e.g., AFPR/TGRM < 5, TSS > 50).
+        - Yellow (#F5A461) for average performance (e.g., AFPR/TGRM 5-10, TSS 20-50).
+        - Red (#E63946) for poor performance (e.g., AFPR/TGRM > 10, TSS < 20).
+      - Add a small icon next to each metric (e.g., a trophy for AFPR, a grid for TGRM, a star for TSS).
+    - **Highlighted Cards for Top/Weakest Areas**:
+      - Display the top 3 and weakest 3 grid points as cards.
+      - Each card should include:
+        - An icon (e.g., a trophy for top areas, a warning sign for weakest areas).
+        - The coordinates (latitude, longitude) of the grid point.
+        - The rank of the grid point.
+      - Style the cards with a border and background color (e.g., #28A745 for top areas, #E63946 for weakest areas).
+    - **Trend Indicators**:
+      - Next to each metric (AFPR, TGRM, TSS), show the change compared to the previous scan.
+      - Display an up arrow (green) for improvement, a down arrow (red) for decline, or a dash (gray) for no change.
+      - Include the numerical change (e.g., "+0.5", "-1.2").
+  - **Interactivity**:
+    - **Toggle for Metrics View**:
+      - Add a toggle button to switch between two views:
+        - "Overall Grid": Show the current metrics and rank distribution for the entire grid.
+        - "Top Regions": Show metrics and rank distribution for only the top-performing regions (e.g., grid points with rank <= 10).
+      - When the "Top Regions" view is selected, recalculate the metrics (AFPR, TGRM, TSS) and rank distribution using only the grid points with ranks <= 10.
+    - **Clickable Opportunity Areas**:
+      - Update the "Opportunity Areas" section to make each area clickable.
+      - When clicked, zoom the map to the center of that area (e.g., Southeast region, Central downtown).
+      - Use the coordinates of the top/weakest grid points to determine the center of each area (e.g., average the coordinates of the weakest grid points for the "Southeast region").
+    - **Tooltips**:
+      - Add tooltips to the progress bars to show the exact value and a brief description (e.g., "Average First Page Rank: The average rank of your business across all grid points").
+      - Add tooltips to the trend indicators to show the previous value (e.g., "Previous AFPR: 2.5").
+  - **Design**:
+    - Use the app’s existing color scheme:
+      - Primary color: #F28C38 for buttons and highlights.
+      - Text: #1C2526.
+      - Positive: #28A745 (Green).
+      - Warning: #F5A461 (Yellow).
+      - Negative: #E63946 (Red).
+      - Neutral: #CCCCCC (Gray).
+    - Use the Montserrat font: 16px for body text, 20px bold for headings.
+    - Add subtle animations using Framer Motion:
+      - Fade-in animation for the entire section when it loads.
+      - Scale animation on hover for the cards and toggle button.
+
+### Testing
+- **Test Case 1: Data Display**:
+  - Select a campaign and keyword, and verify that the "Ranking Summary" section displays all new data points:
+    - Rank distribution in a donut chart.
+    - AFPR, TGRM, TSS in progress bars with trend indicators.
+    - Top and weakest grid points in highlighted cards.
+    - Keyword difficulty with a competitiveness label.
+- **Test Case 2: Visual Elements**:
+  - Ensure the donut chart uses the correct colors and displays percentages accurately.
+  - Verify that the progress bars are color-coded based on performance and scale correctly.
+  - Check that the cards for top/weakest areas have the correct icons and styling.
+  - Confirm that trend indicators show the correct direction and numerical change.
+- **Test Case 3: Interactivity**:
+  - Test the toggle between "Overall Grid" and "Top Regions" views, ensuring the metrics and rank distribution update accordingly.
+  - Click on an "Opportunity Area" (e.g., Southeast region) and verify that the map zooms to the correct location.
+  - Hover over progress bars and trend indicators to confirm that tooltips display the correct information.
+- **Test Case 4: Error Handling**:
+  - Test with no previous scan data and verify that the trend indicators show a dash (no change).
+  - Test with a failed DataForSEO API call for keyword difficulty and ensure it defaults to 0 with a "Not Available" label.

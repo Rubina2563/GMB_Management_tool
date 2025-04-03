@@ -1,0 +1,58 @@
+Build the Posts feature in the client portal to enable creating, scheduling, and analyzing GBP posts, leveraging the linked Google account:
+
+- Backend:
+  - Add endpoints:
+    - "/api/client/posts/create": Create a post for a selected GBP (mock Google API, support Update, Offer, Event, Product Post types). Include title, description, photo/video URL (mock upload), CTA (e.g., "Learn More"), start/end dates (for Offers/Events), coupon code, terms (for Offers).
+    - "/api/client/posts/ai-generate": Generate post content using the selected LLM (OpenAI, Claude, DeepSeek, Grok). Use client’s API key if provided (free), otherwise our API (2 credits per generation). Prompt: "Generate a concise, engaging GBP post (under 1500 characters) for a [post type] post, using the seed keyword [keyword], GBP category [category], and optional topic [topic]. Include a strong CTA (e.g., 'Shop Now', 'Book Today'). Use a friendly, professional tone suitable for a local audience in [location]. Avoid phone numbers."
+    - "/api/client/posts/schedule": Schedule a post for immediate posting or a future date/time (mock Google API).
+    - "/api/client/posts/list": List all posts for a GBP (live, scheduled, expired).
+    - "/api/client/posts/analytics": Fetch post metrics (mock Google API: views, CTA clicks) and UTM-tracked website clicks (mock Google Analytics).
+    - "/api/client/posts/best-time": Analyze historical post metrics to suggest the best posting time for a GBP (mock analysis: e.g., "Wednesdays at 10 AM").
+  - Store post data in SQLite: GBP ID, post type, content, status (live/scheduled/expired), schedule date, metrics (views, clicks), UTM parameters.
+  - Implement credit system: 1 credit per post creation, 2 credits per AI generation if using our API.
+
+- Frontend:
+  - Create /client/posts with the following layout:
+    - Left-Hand Sidebar: Retain gradient (#1C2526 to #0D1214), text #FFFFFF, active items #F28C38.
+    - Right-Hand Pane:
+      - Background: #FFFFFF.
+      - Text: #1C2526 (primary), #D3D7D9 (secondary).
+      - Buttons: #F28C38 with hover #F5A461.
+  - Sub-Menu: "Create Post", "Scheduled Posts", "Analytics".
+  - Create Post:
+    - Dropdown to select a GBP (only those linked to active campaigns).
+    - Post Type selector (Update, Offer, Event, Product Post).
+    - Manual input: Title, description (1500 char limit), photo/video URL (mock upload), CTA dropdown (e.g., "Learn More", "Shop Now"), start/end dates (for Offers/Events), coupon code, terms.
+    - AI Option: Toggle to "Generate with AI". Inputs: Seed keyword (default to primary keyword from Campaigns), GBP category (auto-filled), optional topic. Display cost (2 credits if using our API, free with client’s API key). Show AI-generated content in an editable text area with a "Regenerate" button (#6B5B95).
+    - Visual Preview: Show a live preview of the post as it would appear on Google Search (mock layout).
+    - Scheduling: Options for "Post Immediately" or "Schedule" with a date picker (default to current date/time).
+    - Post Button: #F28C38, deducts 1 credit.
+  - Scheduled Posts:
+    - Calendar View: Default to Month view, with buttons/dropdown for Month/Week/Day views (use react-big-calendar or similar).
+    - Display posts as events on the calendar (color-coded: live #F28C38, scheduled #6B5B95, expired #D3D7D9).
+    - Post Cards: Glassmorphism (rgba(255, 255, 255, 0.8), blur(10px), border #F28C38), text #1C2526.
+    - Features:
+      - Best Time Suggestion: Display "Suggested Posting Time: [e.g., Wed 10 AM]" (#6B5B95 text) based on historical metrics.
+      - Expiration Reminder: Toast notification 1 day before expiration (e.g., "Offer Post expires tomorrow. Repost?").
+      - Evergreen Queue: Option to mark posts as "Evergreen" and auto-re-queue after expiration (toggle in post card).
+  - Analytics:
+    - Table: Show post title, type, status, views, CTA clicks, website clicks (via UTM).
+    - Chart: Line chart (Chart.js, #6B5B95) showing views over time for selected GBP.
+  - Notifications:
+    - In-app: Toast (#F28C38) for post creation, scheduling, and expiration reminders.
+    - Email: Mock notification for scheduled posts going live.
+
+- Design:
+  - Use #F28C38 for buttons, #6B5B95 for charts, #E63946 for alerts (e.g., failed posts).
+  - Apply Framer Motion: Fade-in for cards, scale on hover for buttons.
+  - Montserrat font: 24px bold headings, 16px body.
+
+- Interdependencies:
+  - Use keywords from Campaigns for AI generation.
+  - Sync post data to Reports for PDF export (js-pdf).
+
+- Testing:
+  - Verify GBP selection only shows campaign-linked GBPs.
+  - Test AI generation with different LLMs and cost deduction.
+  - Ensure calendar views (Month/Week/Day) render correctly.
+  - Validate analytics metrics and UTM tracking.

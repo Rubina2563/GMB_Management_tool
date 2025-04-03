@@ -1,0 +1,278 @@
+I’ll rewrite the StableDialog and StableDialogContent components to ensure the dialog doesn’t crash, stays open during form interactions, and works reliably on the first attempt. I’ll also provide a snippet for the FAQ dialog usage to ensure proper state initialization.
+
+1. Rewritten stable-dialog.tsx
+The goal is to make the dialog robust by:
+
+Properly handling onInteractOutside to prevent closing when interacting with form elements.
+Ensuring the dialog doesn’t crash due to event propagation issues.
+typescript
+
+Collapse
+
+Wrap
+
+Copy
+// client/src/components/ui/stable-dialog.tsx
+import * as React from "react";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { cn } from "@/lib/utils"; // Assuming you have a utility for classNames
+
+interface StableDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  children: React.ReactNode;
+}
+
+export function StableDialog({ open, onOpenChange, children }: StableDialogProps) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      {children}
+    </Dialog>
+  );
+}
+
+interface StableDialogContentProps
+  extends React.ComponentPropsWithoutRef<typeof DialogContent> {
+  className?: string;
+}
+
+export const StableDialogContent = React.forwardRef<
+  React.ElementRef<typeof DialogContent>,
+  StableDialogContentProps
+>(({ className, children, ...props }, ref) => {
+  const handleInteractOutside = (e: Event) => {
+    const target = e.target as HTMLElement;
+    // Prevent closing if the interaction is with a form element or inside the dialog content
+    const isFormElement =
+      target.tagName === "INPUT" ||
+      target.tagName === "TEXTAREA" ||
+      target.tagName === "SELECT" ||
+      target.isContentEditable ||
+      target.closest('input, textarea, select, [contenteditable="true"]');
+
+    if (isFormElement) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  };
+
+  return (
+    <DialogContent
+      ref={ref}
+      onInteractOutside={handleInteractOutside}
+      className={cn(
+        "sm:max-w-[550px] bg-white p-6 rounded-lg shadow-lg",
+        className
+      )}
+      {...props}
+    >
+      {children}
+    </DialogContent>
+  );
+});
+StableDialogContent.displayName = "StableDialogContent";
+Key Changes:
+
+Simplified Event Handling: Moved the logic to onInteractOutside, which is the correct Radix UI event for handling outside clicks. This ensures the dialog doesn’t close when interacting with form elements.
+Removed onPointerDownCapture: This was overcomplicating the solution and not the right event for preventing dialog closure.
+ClassName Utility: Used cn to handle class names consistently, ensuring the dialog’s styling aligns with your design (white background, etc.).
+2. Usage in FAQsList.tsx (Add/Edit FAQ Dialog)
+To fix the crashing issue on the first attempt, we need to ensure the state is properly initialized and the dialog doesn’t close unexpectedly. Below is a rewritten snippet for the dialog usage in FAQsList.tsx.
+
+typescript
+
+Collapse
+
+Wrap
+
+Copy
+// client/src/components/FAQsList.tsx (partial)
+import React, { useState } from "react";
+import { StableDialog, StableDialogContent } from "@/components/ui/stable-dialog";
+import { DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+
+interface FAQ {
+  question: string;
+  answer: string;
+}
+
+interface FAQsListProps {
+  // Add your props here
+}
+
+const FAQsList: React.FC<FAQsListProps> = () => {
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [newFAQ, setNewFAQ] = useState<FAQ>({ question: "", answer: "" });
+  const [editingFAQ, setEditingFAQ] = useState<FAQ | null>(null);
+
+  const handleAddFAQ = () => {
+    // Reset the form state before opening the dialog
+    setNewFAQ({ question: "", answer: "" });
+    setIsAddDialogOpen(true);
+  };
+
+  const handleEditFAQ = (faq: FAQ) => {
+    // Set the FAQ to edit and open the dialog
+    setEditingFAQ(faq);
+    setNewFAQ({ question: faq.question, answer: faq.answer });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleSaveFAQ = () => {
+    // Add your save logic here (e.g., API call to save the FAQ)
+    console.log("Saving FAQ:", newFAQ);
+    setIsAddDialogOpen(false);
+    setIsEditDialogOpen(false);
+  };
+
+  return (
+    <div>
+      {/* Add FAQ Button */}
+      <Button
+        onClick={handleAddFAQ}
+        className="bg-[#F28C38] text-white hover:bg-[#F28C38]/90"
+      >
+        Add FAQ
+      </Button>
+
+      {/* Add FAQ Dialog */}
+      <StableDialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <StableDialogContent>
+          <DialogHeader>
+            <DialogTitle className="text-black">Add New FAQ</DialogTitle>
+            <DialogDescription className="text-gray-600">
+              Enter the question and answer for your new FAQ.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="question" className="text-black">Question</Label>
+              <Input
+                id="question"
+                value={newFAQ.question}
+                onChange={(e) =>
+                  setNewFAQ({ ...newFAQ, question: e.target.value })
+                }
+                placeholder="e.g., What are your hours?"
+                className="text-black bg-white"
+              />
+            </div>
+            <div>
+              <Label htmlFor="answer" className="text-black">Answer</Label>
+              <Input
+                id="answer"
+                value={newFAQ.answer}
+                onChange={(e) =>
+                  setNewFAQ({ ...newFAQ, answer: e.target.value })
+                }
+                placeholder="e.g., We are open from 9 AM to 5 PM."
+                className="text-black bg-white"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsAddDialogOpen(false)}
+              className="text-black border-gray-300"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSaveFAQ}
+              className="bg-[#F28C38] text-white hover:bg-[#F28C38]/90"
+            >
+              Save
+            </Button>
+          </DialogFooter>
+        </StableDialogContent>
+      </StableDialog>
+
+      {/* Edit FAQ Dialog */}
+      <StableDialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <StableDialogContent>
+          <DialogHeader>
+            <DialogTitle className="text-black">Edit FAQ</DialogTitle>
+            <DialogDescription className="text-gray-600">
+              Update the question and answer for this FAQ.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="edit-question" className="text-black">Question</Label>
+              <Input
+                id="edit-question"
+                value={newFAQ.question}
+                onChange={(e) =>
+                  setNewFAQ({ ...newFAQ, question: e.target.value })
+                }
+                placeholder="e.g., What are your hours?"
+                className="text-black bg-white"
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-answer" className="text-black">Answer</Label>
+              <Input
+                id="edit-answer"
+                value={newFAQ.answer}
+                onChange={(e) =>
+                  setNewFAQ({ ...newFAQ, answer: e.target.value })
+                }
+                placeholder="e.g., We are open from 9 AM to 5 PM."
+                className="text-black bg-white"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsEditDialogOpen(false)}
+              className="text-black border-gray-300"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSaveFAQ}
+              className="bg-[#F28C38] text-white hover:bg-[#F28C38]/90"
+            >
+              Save
+            </Button>
+          </DialogFooter>
+        </StableDialogContent>
+      </StableDialog>
+    </div>
+  );
+};
+
+export default FAQsList;
+Key Changes:
+
+State Initialization:
+In handleAddFAQ, explicitly reset newFAQ to { question: "", answer: "" } before opening the dialog, ensuring no undefined state causes a crash.
+In handleEditFAQ, set newFAQ to the current FAQ’s values to prefill the form, avoiding null/undefined errors.
+Stable Dialog Usage:
+Used the updated StableDialog and StableDialogContent components to ensure the dialog doesn’t close unexpectedly.
+Removed unnecessary event propagation handling on inputs (e.g., stopPropagation), as the StableDialogContent now handles this via onInteractOutside.
+Consistent Styling:
+Ensured all text is black (#000000) on a white background (#FFFFFF), with buttons styled as orange (#F28C38) with white text (#FFFFFF).
+3. Why This Fixes the Issue
+Crash on First Attempt:
+The state (newFAQ) is now properly initialized before the dialog opens, preventing undefined errors.
+The StableDialogContent component correctly handles onInteractOutside, ensuring form interactions don’t trigger a close.
+Works on First Attempt:
+By initializing state upfront and using a robust dialog component, the dialog will open and function correctly on the first attempt.
+Smooth Experience:
+The dialog stays open during form interactions (e.g., typing in inputs), and the user can save or cancel without crashes.
+4. Testing Instructions
+Add FAQ:
+Click the "Add FAQ" button and verify the dialog opens without crashing.
+Enter a question and answer, then click "Save" to confirm it works.
+Edit FAQ:
+Click the "Edit" button on an existing FAQ and verify the dialog opens with prefilled values.
+Update the fields and save, ensuring no crash occurs.
+Form Interaction:
+While the dialog is open, type in the input fields and click around inside the dialog to confirm it doesn’t close unexpectedly.

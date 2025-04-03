@@ -1,0 +1,232 @@
+PDF Report Template Design
+General Design Principles
+Branding: Incorporate the "Authority Local" logo, color scheme, and typography to ensure brand consistency.
+Readability: Use clear, professional formatting with ample white space, black text for readability, and orange highlights for emphasis.
+Structure: Include a cover page, table of contents, and detailed report sections with commentary for each data point, graph, or chart.
+Style Guide Alignment:
+Background Colors: bg-white (#FFFFFF) for main content areas.
+Text Colors: text-black (#000000) for primary text, text-orange-base (#F97316) for accents, text-gray-500 for secondary text.
+Custom Colors: Orange base (#F97316), Orange light (#FB923C), Black (#000000), White (#FFFFFF), Gray borders (#E5E7EB).
+PDF Report Template Structure
+1. Cover Page
+Purpose: Provide a professional introduction to the report with branding, client information, and timestamps.
+
+Design:
+
+Header:
+Logo: Place the "Authority Local" logo at the top center (assume a rectangular logo for now; adjust placement if the logo has a different shape).
+Tagline (Optional): Below the logo, in text-gray-500, 12px Montserrat font: "Empowering Local Businesses with Actionable Insights".
+Title:
+Centered, text-black, 24px Montserrat font, bold: "Google Business Profile Optimization Report".
+Client Information:
+Below the title, in a centered box with bg-gray-50 border border-gray-200:
+Business Name: text-black, 16px Montserrat font (e.g., "Fitness Pro Studio").
+Location: text-gray-500, 12px Montserrat font (e.g., "123 Main St, City, State").
+Report Date: text-gray-500, 12px Montserrat font (e.g., "Generated on: March 28, 2025").
+Footer:
+At the bottom, text-gray-500, 10px Montserrat font: "Powered by Authority Local | www.authoritylocal.com".
+Include a thin horizontal line in bg-orange-base (#F97316) above the footer for visual separation.
+Example Layout:
+
+text
+
+Collapse
+
+Wrap
+
+Copy
+--------------------------------------------------
+|                                                |
+|               [Authority Local Logo]           |
+|  Empowering Local Businesses with Insights     |
+|                                                |
+|       Google Business Profile Optimization     |
+|                   Report                       |
+|                                                |
+|  --------------------------------------------  |
+|  | Fitness Pro Studio                        |  |
+|  | 123 Main St, City, State                  |  |
+|  | Generated on: March 28, 2025             |  |
+|  --------------------------------------------  |
+|                                                |
+|                                                |
+|  --------------------------------------------  |
+|  Powered by Authority Local | www.authoritylocal.com  |
+--------------------------------------------------
+2. Table of Contents
+Purpose: Provide an overview of the report sections with clickable links (if supported by the PDF viewer) for easy navigation.
+
+Design:
+
+Background: bg-white (#FFFFFF).
+Title:
+Top left, text-black, 18px Montserrat font, bold: "Table of Contents".
+Content:
+List sections with page numbers in a two-column format:
+Section names: text-black, 14px Montserrat font.
+Page numbers: text-orange-base (#F97316), 14px Montserrat font, aligned right.
+Example:
+text
+
+Collapse
+
+Wrap
+
+Copy
+1. Overview ................................ 3
+2. Keywords ............................... 4
+3. Reviews ................................ 5
+4. Posting ................................ 6
+5. Citations .............................. 7
+6. Performance ............................ 8
+7. Competitors ............................ 9
+8. Description Insights .................. 10
+9. Action Plan ............................ 11
+Header:
+Include a smaller version of the "Authority Local" logo at the top left.
+Top right, text-gray-500, 10px Montserrat font: "Generated on: March 28, 2025".
+Footer:
+Same as the cover page: text-gray-500, 10px Montserrat font: "Powered by Authority Local | www.authoritylocal.com", with a bg-orange-base line above.
+Example Layout:
+
+text
+
+Collapse
+
+Wrap
+
+Copy
+--------------------------------------------------
+| [Authority Local Logo]      Generated on: March 28, 2025 |
+|                                                |
+|               Table of Contents                |
+|                                                |
+| 1. Overview ................................ 3 |
+| 2. Keywords ............................... 4 |
+| 3. Reviews ................................ 5 |
+| 4. Posting ................................ 6 |
+| 5. Citations .............................. 7 |
+| 6. Performance ............................ 8 |
+| 7. Competitors ............................ 9 |
+| 8. Description Insights .................. 10 |
+| 9. Action Plan ............................ 11 |
+|                                                |
+|  --------------------------------------------  |
+|  Powered by Authority Local | www.authoritylocal.com  |
+--------------------------------------------------
+3. Report Sections (General Template for Each Section)
+Purpose: Present detailed insights for each tab (e.g., Overview, Keywords, Reviews, etc.) with data, visualizations (graphs/charts), and actionable commentary.
+
+Design:
+
+Background: bg-white (#FFFFFF).
+Header:
+Top left: Section title (e.g., "Overview"), text-black, 18px Montserrat font, bold.
+Top right: "Score: 70/100", text-orange-base (#F97316), 16px Montserrat font.
+Include a smaller "Authority Local" logo at the top left, above the section title.
+Content:
+Data/Visualizations:
+Use cards with bg-white border border-gray-200 (#FFFFFF background, #E5E7EB border).
+Text: text-black (#000000) for labels, text-gray-500 for values.
+Graphs/Charts: Use bg-orange-base (#F97316) for primary data lines/bars, bg-gray-100 for backgrounds.
+Commentary:
+Below each data point, graph, or chart, include a commentary section:
+Title: "Insight", text-black, 14px Montserrat font, bold.
+Text: text-black, 12px Montserrat font, with actionable advice (e.g., "Your review response rate is 65%. Respond to negative reviews within 24 hours to improve customer satisfaction.").
+Highlight key actions in text-orange-base (#F97316) (e.g., "Respond to negative reviews").
+Recommendations:
+In a separate card with bg-white border border-gray-200.
+Text: text-black (#000000) for recommendation text, text-orange-base (#F97316) for highlighted actions.
+Footer:
+Same as previous pages: text-gray-500, 10px Montserrat font: "Powered by Authority Local | www.authoritylocal.com", with a bg-orange-base line above.
+Example Layout (for Overview Section):
+
+text
+
+Collapse
+
+Wrap
+
+Copy
+--------------------------------------------------
+| [Authority Local Logo]                Score: 70/100 |
+|                                                |
+|                   Overview                     |
+|                                                |
+| **Category Scores**                            |
+| [Card: bg-white border border-gray-200]        |
+| Keyword Optimization: 72/100 [Progress Bar]    |
+| Review Response: 65/100 [Progress Bar]         |
+| ...                                            |
+|                                                |
+| **Insight**                                    |
+| Your review response rate is 65%. Respond to   |
+| negative reviews within 24 hours to improve    |
+| customer satisfaction.                         |
+|                                                |
+| **Key Recommendations**                        |
+| [Card: bg-white border border-gray-200]        |
+| - Respond to negative reviews within 24 hours  |
+| - Add keywords to your description             |
+|                                                |
+|  --------------------------------------------  |
+|  Powered by Authority Local | www.authoritylocal.com  |
+--------------------------------------------------
+4. Final Page: Action Plan
+Purpose: Summarize all recommendations from the report into a concise, actionable list for the client to follow.
+
+Design:
+
+Background: bg-white (#FFFFFF).
+Header:
+Top left: "Action Plan", text-black, 18px Montserrat font, bold.
+Include a smaller "Authority Local" logo at the top left, above the title.
+Content:
+List all recommendations from the report in a numbered list:
+Text: text-black, 12px Montserrat font.
+Highlight key actions in text-orange-base (#F97316) (e.g., "Respond to negative reviews").
+Example:
+text
+
+Collapse
+
+Wrap
+
+Copy
+1. Respond to negative reviews within 24 hours to improve your review response score.
+2. Add keywords like 'emergency plumbing repair' to your description to boost visibility.
+3. Schedule posts for Monday at 7:00 AM to increase views.
+...
+Footer:
+Same as previous pages: text-gray-500, 10px Montserrat font: "Powered by Authority Local | www.authoritylocal.com", with a bg-orange-base line above.
+Example Layout:
+
+text
+
+Collapse
+
+Wrap
+
+Copy
+--------------------------------------------------
+| [Authority Local Logo]                         |
+|                                                |
+|                 Action Plan                    |
+|                                                |
+| 1. Respond to negative reviews within 24 hours |
+|    to improve your review response score.      |
+| 2. Add keywords like 'emergency plumbing       |
+|    repair' to your description to boost        |
+|    visibility.                                 |
+| 3. Schedule posts for Monday at 7:00 AM to     |
+|    increase views.                             |
+| ...                                            |
+|                                                |
+|  --------------------------------------------  |
+|  Powered by Authority Local | www.authoritylocal.com  |
+--------------------------------------------------
+Implementation Notes
+PDF Generation Library: Use a library like pdfkit (Python) or jsPDF (JavaScript) to generate the PDF. These libraries support HTML-to-PDF conversion, allowing you to style the report using Tailwind CSS classes (as per your style guide) and then convert it to PDF.
+Branding: Ensure the "Authority Local" logo is high-resolution and placed consistently on each page. If you provide the logo or its dimensions, I can adjust the placement further.
+Timestamps: Dynamically insert the report generation date (e.g., "March 28, 2025") using the current date at the time of generation.
+Commentary: Use NLP (e.g., spaCy/OpenAI) to generate insightful commentary for each data point, graph, or chart, ensuring it’s actionable and specific to the client’s data.

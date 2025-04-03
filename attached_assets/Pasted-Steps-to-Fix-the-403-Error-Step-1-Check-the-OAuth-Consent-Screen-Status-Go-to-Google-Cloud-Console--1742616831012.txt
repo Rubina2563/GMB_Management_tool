@@ -1,0 +1,60 @@
+Steps to Fix the 403 Error
+Step 1: Check the OAuth Consent Screen Status
+Go to Google Cloud Console:
+Open https://console.cloud.google.com.
+Select the project associated with your "LOCALAUTHORITY" app.
+Navigate to OAuth Consent Screen:
+Go to APIs & Services > OAuth consent screen.
+Check the Publishing Status:
+If the status is "Testing":
+Under Test users, ensure your Google account (the one you’re using to sign in) is added as a test user. Click Add users and enter your email address (e.g., your-email@gmail.com).
+Save the changes and try signing in again.
+If the app is ready for production and you want all users to access it:
+Click Publish App to move it to "In production" status. Note that sensitive scopes like https://www.googleapis.com/auth/business.manage may require app verification by Google unless the app is internal (only for users in your organization).
+Verify Scopes:
+Under Scopes, ensure the following scopes are added:
+https://www.googleapis.com/auth/business.manage
+https://www.googleapis.com/auth/userinfo.email
+https://www.googleapis.com/auth/userinfo.profile
+If any are missing, click Add or remove scopes, select the scopes, and save.
+Step 2: Verify the User’s GBP Access
+Check GBP Access:
+Sign in to https://business.google.com with the same Google account you’re using to test the "Sign in with Google" button.
+Ensure the account has access to at least one Google Business Profile. If not, create or claim a GBP for testing purposes.
+Check Permissions:
+If the account has access to a GBP, ensure it has the necessary permissions (e.g., Owner or Manager role) to manage the profile. The https://www.googleapis.com/auth/business.manage scope requires these permissions.
+Step 3: Verify OAuth Client ID Configuration
+Go to Credentials:
+In Google Cloud Console, navigate to APIs & Services > Credentials.
+Check the OAuth 2.0 Client ID:
+Find the OAuth 2.0 Client ID used by your app (likely named "Web Client 1" or similar).
+Ensure the Authorized redirect URIs include the correct Replit URL:
+text
+
+Collapse
+
+Wrap
+
+Copy
+https://<your-replit-id>.replit.dev/oauth2callback
+For example:
+text
+
+Collapse
+
+Wrap
+
+Copy
+https://81309e9b-c4df-48e0-a2c2-0a8d3c0e3162-00-35ppsa0tcuv6v.replit.dev/oauth2callback
+If the URI doesn’t match, update it and save.
+Check Authorized JavaScript Origins:
+Ensure the Authorized JavaScript origins include your Replit URL:
+text
+
+Collapse
+
+Wrap
+
+Copy
+https://<your-replit-id>.replit.dev
+If missing, add it and save.

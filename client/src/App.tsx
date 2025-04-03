@@ -1,0 +1,292 @@
+import { Switch, Route, Redirect } from "wouter";
+import { queryClient } from "./lib/queryClient";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { Toaster } from "@/components/ui/toaster";
+import NotFound from "@/pages/not-found";
+import Home from "@/pages/Home";
+import Features from "@/pages/Features";
+import Documentation from "@/pages/Documentation";
+import ApiReference from "@/pages/ApiReference";
+import AuthPage from "@/pages/AuthPage";
+import AuthTestPage from "@/pages/AuthTestPage";
+import LoginBypass from "@/pages/LoginBypass";
+import ApiKeysPage from "@/pages/ApiKeysPage";
+import SubscriptionPage from "@/pages/SubscriptionPage";
+import OAuthTestPage from "@/pages/OAuthTestPage";
+import AnimatedButtonDemo from "@/pages/AnimatedButtonDemo";
+import GlowButtonDemo from "@/pages/GlowButtonDemo";
+import ButtonShowcase from "@/pages/ButtonShowcase";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
+import Layout from "@/components/Layout";
+import { AuthProvider, useAuth } from "@/lib/auth";
+import { LocationProvider } from "@/lib/location-context";
+import { CampaignProvider } from "@/lib/campaign-context";
+import { ThemeProvider } from "./context/ThemeContext";
+import { Loader2 } from "lucide-react";
+import { ProtectedRoute, AdminRoute, ClientRoute } from "@/lib/protected-route";
+
+// Import the dashboard components
+import AdminDashboard from "@/pages/AdminDashboard";
+import ClientDashboard from "@/pages/ClientDashboard";
+import LocalDashboard from "@/pages/LocalDashboard";
+import OptimizationPage from "@/pages/OptimizationPage";
+import CampaignsPage from "@/pages/CampaignsPage";
+import CampaignSetupPage from "@/pages/CampaignSetupPage";
+import LocationsPage from "@/pages/LocationsPage";
+import ReviewsPage from "@/pages/ReviewsPage";
+import ReviewManagementPage from "@/pages/ReviewManagementPage";
+import RequestReviewsPage from "@/pages/RequestReviewsPage";
+import SentimentAnalysisPage from "@/pages/SentimentAnalysisPage";
+import PostsPage from "@/pages/PostsPage";
+import CreatePostPage from "@/pages/CreatePostPage";
+import PostSchedulerPage from "@/pages/PostSchedulerPage";
+import PostAnalyticsPage from "@/pages/PostAnalyticsPage";
+import CitationsPage from "@/pages/CitationsPage";
+import KeywordsPage from "@/pages/KeywordsPage";
+import GBPAuditPage from "@/pages/GBPAuditPage";
+import RankingsPage from "@/pages/RankingsPage";
+import OrganicRankingsPage from "@/pages/OrganicRankingsPage";
+import CompetitorAnalysisPage from "@/pages/CompetitorAnalysisPage";
+import LocalLinksPage from "@/pages/LocalLinksPage";
+import ImageOptimizationPage from "@/pages/ImageOptimizationPage";
+import FaqsReplyPage from "@/pages/FaqsReplyPage";
+import DescriptionGeneratorPage from "@/pages/DescriptionGeneratorPage";
+
+function Router() {
+  const { user, isAdmin, isClient, isLoading, isAuthenticated } = useAuth();
+
+  // Don't render routes until auth state is determined
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Check if the current path should use the sidebar layout
+  const useSidebarLayout = () => {
+    const path = window.location.pathname;
+    return (
+      path.startsWith('/admin') || 
+      path.startsWith('/client') || 
+      path.startsWith('/dashboard') || 
+      path === '/subscription' || 
+      path === '/api-keys'
+    );
+  };
+  
+  // Check if the current page is the auth page
+  const isAuthPage = () => {
+    // More reliable check that works with SPAs and different URL patterns
+    return window.location.pathname.includes('/auth');
+  };
+
+  // Wrapper component for routes that use sidebar layout
+  const SidebarLayout = ({ children }: { children: React.ReactNode }) => {
+    return useSidebarLayout() ? <Layout>{children}</Layout> : <>{children}</>;
+  };
+
+  return (
+    <div className="flex flex-col min-h-screen">
+      {/* Don't show header and footer on auth page or when using sidebar */}
+      {!useSidebarLayout() && !isAuthPage() && <Header />}
+      
+      <main className="flex-grow">
+        <Switch>
+          {/* Auth page - outside of SidebarLayout */}
+          <Route path="/auth">
+            {isAuthenticated ? (
+              isAdmin ? <Redirect to="/admin/dashboard" /> : <Redirect to="/client/dashboard" />
+            ) : (
+              <AuthPage />
+            )}
+          </Route>
+
+          {/* All other routes */}
+          <Route>
+            <SidebarLayout>
+              <Switch>
+                {/* Public routes */}
+                <Route path="/" component={Home} />
+                <Route path="/features" component={Features} />
+                <Route path="/documentation" component={Documentation} />
+                <Route path="/api" component={ApiReference} />
+                <Route path="/animated-buttons" component={AnimatedButtonDemo} />
+                <Route path="/glow-buttons" component={GlowButtonDemo} />
+                <Route path="/button-showcase" component={ButtonShowcase} />
+                
+                {/* Admin routes */}
+                <AdminRoute path="/admin/dashboard" component={AdminDashboard} />
+                <AdminRoute path="/admin/users" component={() => (
+                  <div className="p-6 bg-white rounded-lg shadow-sm">
+                    <div className="border rounded-lg overflow-hidden">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-[#c9c08f]">
+                          <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-[#006039] uppercase tracking-wider">User</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-[#006039] uppercase tracking-wider">Role</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-[#006039] uppercase tracking-wider">Status</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-[#006039] uppercase tracking-wider">Subscription</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-[#006039] uppercase tracking-wider">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          <tr>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex items-center">
+                                <div className="ml-4">
+                                  <div className="text-sm font-medium text-gray-900">John Doe</div>
+                                  <div className="text-sm text-gray-500">john@example.com</div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-[#9eca9e] text-[#006039]">Client</span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Active</span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Pro</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                              <button className="text-[#a37e2c] hover:text-[#006039] mr-3">Edit</button>
+                              <button className="text-red-600 hover:text-red-900">Delete</button>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )} />
+                <AdminRoute path="/admin/subscriptions" component={() => (
+                  <div className="p-6 bg-white rounded-lg shadow-sm">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div className="border rounded-lg p-6 hover:shadow-md transition-shadow">
+                        <h2 className="text-xl font-semibold mb-2">Free</h2>
+                        <p className="text-gray-600 mb-4">Basic features for getting started</p>
+                        <p className="text-3xl font-bold mb-4">$0<span className="text-sm text-gray-500">/month</span></p>
+                        <button className="w-full bg-[#c9c08f] text-[#006039] font-medium py-2 rounded hover:bg-[#a37e2c] hover:text-white transition-colors">Manage Plan</button>
+                      </div>
+                      <div className="border rounded-lg p-6 bg-[#f4f4f2] shadow-md border-[#a37e2c]">
+                        <h2 className="text-xl font-semibold mb-2">Basic</h2>
+                        <p className="text-gray-600 mb-4">Enhanced features for professionals</p>
+                        <p className="text-3xl font-bold mb-4">$49<span className="text-sm text-gray-500">/month</span></p>
+                        <button className="w-full bg-[#a37e2c] text-white font-medium py-2 rounded hover:bg-[#006039] transition-colors">Manage Plan</button>
+                      </div>
+                      <div className="border rounded-lg p-6 hover:shadow-md transition-shadow">
+                        <h2 className="text-xl font-semibold mb-2">Pro</h2>
+                        <p className="text-gray-600 mb-4">Advanced features for power users</p>
+                        <p className="text-3xl font-bold mb-4">$99<span className="text-sm text-gray-500">/month</span></p>
+                        <button className="w-full bg-[#c9c08f] text-[#006039] font-medium py-2 rounded hover:bg-[#a37e2c] hover:text-white transition-colors">Manage Plan</button>
+                      </div>
+                    </div>
+                  </div>
+                )} />
+                <AdminRoute path="/admin/api-keys" component={ApiKeysPage} />
+                
+                {/* Client routes */}
+                <ClientRoute path="/client/dashboard" component={ClientDashboard} />
+                <ClientRoute path="/client/local-dashboard" component={LocalDashboard} />
+                <ClientRoute path="/client/locations" component={LocationsPage} />
+                <ClientRoute path="/client/optimization" component={OptimizationPage} />
+                <ClientRoute path="/client/campaigns/setup" component={CampaignSetupPage} />
+                <ClientRoute path="/client/campaigns/new/:step?" component={CampaignSetupPage} />
+                <ClientRoute path="/client/campaigns" component={CampaignsPage} />
+                <ClientRoute path="/client/reviews" component={ReviewsPage} />
+                <ClientRoute path="/client/review-management" component={ReviewManagementPage} />
+                <ClientRoute path="/client/request-reviews" component={RequestReviewsPage} />
+                <ClientRoute path="/client/sentiment-analysis" component={SentimentAnalysisPage} />
+                <ClientRoute path="/client/posts/:locationId" component={CreatePostPage} />
+                <ClientRoute path="/client/posts" component={CreatePostPage} />
+                <ClientRoute path="/client/posts/scheduler/:locationId" component={PostSchedulerPage} />
+                <ClientRoute path="/client/posts/scheduler" component={PostSchedulerPage} />
+                <ClientRoute path="/client/posts/analytics/:locationId" component={PostAnalyticsPage} />
+                <ClientRoute path="/client/posts/analytics" component={PostAnalyticsPage} />
+                <Route path="/client/citations">
+                  <Redirect to="/client/citations/report" />
+                </Route>
+                <ClientRoute path="/client/citations/report" component={CitationsPage} />
+                <ClientRoute path="/client/citations/audit" component={CitationsPage} />
+                <ClientRoute path="/client/citations/gap" component={CitationsPage} />
+                <ClientRoute path="/client/citations/build" component={CitationsPage} />
+                <ClientRoute path="/client/competitors" component={() => <div className="p-4 bg-white rounded shadow">Competitors Page</div>} />
+                <ClientRoute path="/client/keywords" component={KeywordsPage} />
+                <ClientRoute path="/client/gbp-audit" component={GBPAuditPage} />
+                
+                {/* Rankings pages */}
+                <ClientRoute path="/client/rankings" component={RankingsPage} />
+                <ClientRoute path="/client/local-rankings/organic" component={OrganicRankingsPage} />
+                <ClientRoute path="/client/campaigns/competitors" component={CompetitorAnalysisPage} />
+                
+                {/* Local Links pages */}
+                <Route path="/client/local-links">
+                  <Redirect to="/client/local-links/citation-report" />
+                </Route>
+                <ClientRoute path="/client/local-links/citation-report" component={() => <LocalLinksPage activeTabDefault="citation-report" />} />
+                <ClientRoute path="/client/local-links/competitor-gap" component={() => <LocalLinksPage activeTabDefault="competitor-gap" />} />
+                <ClientRoute path="/client/local-links/build-citations" component={() => <LocalLinksPage activeTabDefault="build-citations" />} />
+                
+                {/* GBP Management Pages */}
+                <ClientRoute path="/client/gbp-management/image-optimization" component={ImageOptimizationPage} />
+                <ClientRoute path="/client/gbp-management/faqs-reply" component={() => <FaqsReplyPage />} />
+                <ClientRoute path="/client/gbp-management/description-generator" component={() => <DescriptionGeneratorPage />} />
+                
+                {/* Legacy route redirects */}
+                <Route path="/admin">
+                  <Redirect to="/admin/dashboard" />
+                </Route>
+                <Route path="/dashboard">
+                  <Redirect to="/client/dashboard" />
+                </Route>
+                
+                {/* Authentication test page */}
+                <Route path="/auth-test" component={AuthTestPage} />
+                
+                {/* OAuth debug tool */}
+                <Route path="/oauth-test" component={OAuthTestPage} />
+                
+                {/* Login bypass for testing */}
+                <Route path="/login-bypass" component={LoginBypass} />
+                
+                {/* Subscription management - protected route for all users */}
+                <ProtectedRoute path="/subscription" component={SubscriptionPage} />
+                
+                {/* API Keys page - protected route that requires subscription */}
+                <ProtectedRoute 
+                  path="/api-keys" 
+                  component={ApiKeysPage} 
+                  requiresSubscription={true} 
+                />
+                
+                <Route component={NotFound} />
+              </Switch>
+            </SidebarLayout>
+          </Route>
+        </Switch>
+      </main>
+      
+      {/* Don't show footer on auth page or when using sidebar */}
+      {!useSidebarLayout() && !isAuthPage() && <Footer />}
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <LocationProvider>
+          <CampaignProvider>
+            <ThemeProvider>
+              <Router />
+              <Toaster />
+            </ThemeProvider>
+          </CampaignProvider>
+        </LocationProvider>
+      </AuthProvider>
+    </QueryClientProvider>
+  );
+}
+
+export default App;

@@ -1,0 +1,67 @@
+Set up a single "Google API Setup" section in the admin panel of the "LOCALAUTHORITY" React + Node.js SaaS application on Replit, allowing admin users to input shared Google API credentials (API key, OAuth 2.0 Client ID, Client Secret, Redirect URI) for all Google APIs used in the application. Validate each API to ensure they are enabled and working correctly.
+
+### Purpose of Google APIs
+- **Overview**: All Google APIs (Google Business Profile, Places, Maps JavaScript, Natural Language) are part of a single Google Cloud project and share the same API key and OAuth 2.0 credentials. This setup consolidates their configuration into one section.
+- **APIs and Use Cases**:
+  - **Google Business Profile APIs**: Access GBP data (business info, reviews, posts, photos, Q&A, performance, duplicates) for all GBP Audit pages.
+  - **Google Places API**: Generate geo-grid coordinates and cross-reference place IDs for duplicate listings (GBP Map Rankings, Duplicate Listings pages).
+  - **Google Maps JavaScript API**: Render the geo-grid map visualization (GBP Map Rankings page).
+  - **Google Natural Language API**: Perform sentiment analysis on reviews (Reviews page).
+  - **Google OAuth 2.0**: Handle user authentication for secure GBP access across all pages.
+- **Field Testing Goal**: Ensure all Google APIs are configured correctly, allowing seamless data retrieval, mapping, and analysis without authentication or access failures.
+
+### Backend (Node.js)
+- Create a new admin endpoint `/api/admin/google-api/setup`:
+  - **Method**: POST
+  - **Purpose**: Allow admin users to input and save shared Google API credentials.
+  - **Request Body**:
+    - `apiKey`: String (Google API key for Places, Maps JavaScript, etc.).
+    - `clientId`: String (OAuth 2.0 Client ID).
+    - `clientSecret`: String (OAuth 2.0 Client Secret).
+    - `redirectUri`: String (e.g., `http://localhost:3000/oauth2callback`).
+  - **Logic**:
+    - Store the credentials securely in a `.env` file or database (e.g., MongoDB collection `apiCredentials`).
+    - Validate each API using the credentials:
+      - **Google Business Profile**: Fetch a list of accounts (`https://mybusinessaccountmanagement.googleapis.com/v1/accounts`) using the OAuth scope `https://www.googleapis.com/auth/business.manage`.
+      - **Google Places**: Fetch place details for a known place ID (`https://maps.googleapis.com/maps/api/place/details/json`) using the API key.
+      - **Google Maps JavaScript**: Test the API key by initializing a map in a test environment.
+      - **Google Natural Language**: Analyze sentiment for a sample text (`https://language.googleapis.com/v1/documents:analyzeSentiment`) using the API key.
+      - **Google OAuth 2.0**: Generate an authorization URL with scopes: `https://www.googleapis.com/auth/business.manage`, `https://www.googleapis.com/auth/cloud-language`, `https://www.googleapis.com/auth/userinfo.email`, `https://www.googleapis.com/auth/userinfo.profile`.
+    - Return: JSON with `{ success: true, message: "Google API setup successful", validatedApis: ["Business Profile", "Places", "Maps JavaScript", "Natural Language", "OAuth 2.0"] }` or `{ success: false, error: "Validation failed", failedApis: ["list of failed APIs"] }`.
+- Add authentication endpoints for OAuth 2.0:
+  - `/api/auth/google/login`:
+    - Generate an OAuth authorization URL with the above scopes.
+    - Redirect the user to the authorization URL.
+  - `/api/auth/google/callback`:
+    - Handle the OAuth callback, exchange the authorization code for access and refresh tokens.
+    - Store the tokens securely in the user’s session or database.
+    - Redirect the user to the dashboard (`/local-dashboard`).
+- Add an endpoint to fetch the API key for frontend use:
+  - `/api/admin/google-api/api-key`:
+    - **Method**: GET
+    - **Purpose**: Allow the frontend to fetch the API key securely for map rendering.
+    - **Logic**: Return `{ apiKey: "stored-api-key" }`, restricted to authenticated admin users.
+
+### Admin Panel (React)
+- Add a new section in the admin panel under `/admin/api-settings`:
+  - **Section Title**: "Google API Setup"
+  - **Form Fields**:
+    - API Key (text input, for Places, Maps JavaScript, Natural Language).
+    - Client ID (text input, for OAuth 2.0).
+    - Client Secret (text input, for OAuth 2.0).
+    - Redirect URI (text input, pre-filled with `http://localhost:3000/oauth2callback`).
+  - **Submit Button**: "Save Credentials" (#F28C38 with #FFFFFF text, hover #F5A461).
+  - **Logic**:
+    - On form submission, send a POST request to `/api/admin/google-api/setup`.
+    - Display a success message ("Google API setup successful. Validated APIs: [list]") or error message ("Failed to set up API. Failed APIs: [list]") based on the response.
+  - **Design**:
+    - Background: #FFFFFF.
+    - Text: #1C2526.
+    - Montserrat font: 24px bold headings, 16px body.
+    - Framer Motion: Fade-in for the form, scale on hover for the button.
+
+### Testing
+- Verify that admin users can save Google API credentials in the admin panel.
+- Test validation for each API (Business Profile, Places, Maps JavaScript, Natural Language, OAuth 2.0).
+- Test the OAuth flow: Users can sign in, grant consent, and access GBP data.
+- Ensure error handling works if credentials are invalid or missing.

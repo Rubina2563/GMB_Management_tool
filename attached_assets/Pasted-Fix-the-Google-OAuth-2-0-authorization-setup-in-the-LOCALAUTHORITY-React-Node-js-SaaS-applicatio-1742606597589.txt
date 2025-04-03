@@ -1,0 +1,35 @@
+Fix the Google OAuth 2.0 authorization setup in the "LOCALAUTHORITY" React + Node.js SaaS application on Replit to correctly implement a Google connection wizard. The wizard should allow users to authenticate with Google, grant access to their Google Business Profile (GBP) accounts, import GBP profiles into the dashboard, and enable testing of GBP data retrieval. This prompt addresses previous errors ("failed to connect to Google") by providing detailed steps for setup, error handling, and testing.
+
+### Objective
+- **Purpose**: Implement a Google OAuth 2.0 connection wizard that:
+  - Authenticates users with Google.
+  - Requests the necessary scopes to access GBP data.
+  - Imports GBP profiles into the dashboard.
+  - Allows testing of GBP data retrieval to ensure the connection works.
+- **Field Testing Goal**: Ensure users can connect their Google account, import GBP profiles, and fetch GBP data (e.g., business info, reviews) without errors, enabling full functionality of the GBP Audit dashboard.
+
+### Prerequisites
+- **Google Cloud Console Setup**:
+  - Ensure the following APIs are enabled in the Google Cloud project:
+    - Google Business Profile APIs.
+    - Google Places API (New).
+    - Google Maps JavaScript API.
+    - Google Natural Language API.
+  - Ensure a billing account is linked to the project (required for GBP and Places APIs).
+  - OAuth 2.0 Client ID is created with:
+    - **Authorized JavaScript Origins**: `https://<your-replit-id>.replit.dev` (e.g., `https://81309e9b-c4df-48e0-a2c2-0a8d3c0e3162-00-35ppsa0tcuv6v.replit.dev`).
+    - **Authorized Redirect URIs**: `https://<your-replit-id>.replit.dev/oauth2callback`.
+  - API Key is created and restricted to the above APIs, with the HTTP referrer set to `https://*.replit.dev/*`.
+  - OAuth Consent Screen is configured with:
+    - App name, logo, support email, and links to terms of service and privacy policy.
+    - Scopes: `https://www.googleapis.com/auth/business.manage`, `https://www.googleapis.com/auth/userinfo.email`, `https://www.googleapis.com/auth/userinfo.profile`.
+
+### Backend (Node.js)
+- **Step 1: Update Google API Credentials Setup**:
+  - Ensure the `/api/admin/google-api/setup` endpoint (from previous prompts) correctly stores the OAuth 2.0 credentials:
+    - `clientId`: String (OAuth 2.0 Client ID).
+    - `clientSecret`: String (OAuth 2.0 Client Secret).
+    - `redirectUri`: String (e.g., `https://<your-replit-id>.replit.dev/oauth2callback`).
+    - Use the Replit environment variable to dynamically set the redirect URI:
+      ```javascript
+      const redirectUri = `https://${process.env.REPLIT_DEV_DOMAIN}/oauth2callback`;

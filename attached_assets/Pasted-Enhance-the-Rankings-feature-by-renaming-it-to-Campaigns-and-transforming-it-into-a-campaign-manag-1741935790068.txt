@@ -1,0 +1,39 @@
+Enhance the Rankings feature by renaming it to "Campaigns" and transforming it into a campaign management system:
+- Backend:
+  - Add endpoints for campaign management:
+    - "/api/client/campaigns/create": Create a campaign with fields: client name, GBP ID(s), geo-grid size (e.g., 7x7), distance (e.g., 1km), shape (square/circular), keywords (max 100, tagged), update frequency (daily/weekly/fortnightly/monthly), email notifications (recipients, template), credit cost (base 10 + 1 per keyword + 1 per geo-point).
+    - "/api/client/campaigns/rankings": Fetch rankings for each geo-grid point (mock DataForSEO data), supporting km/miles.
+    - "/api/client/campaigns/audit": Free automated audit (compare top 5 GBPs/best practices) and premium manual audit (mock 48-hour turnaround, 50 credits) for all GBP fields.
+    - "/api/client/google/connect": Mock OAuth to link Google account and import GBPs.
+    - "/api/client/keyword-suggestions": Suggest keywords (mock DataForSEO data with volume, difficulty).
+    - "/api/client/reports/export": Generate PDF report of campaign data (mock js-pdf).
+  - Store campaign data in SQLite with multi-client support.
+  - Track credits (mock balance).
+- Frontend:
+  - Rename "Rankings" to "Campaigns" and update the path to /client/campaigns.
+  - Left-Hand Sidebar: Add top-level "Connect to Google" (mock OAuth button), group under "GBP Insights" with sub-menus: "Dashboard", "Optimization", "Campaigns" (Manage Campaigns, View Rankings, Audits), "Reviews".
+  - Right-Hand Pane:
+    - Split into two sections:
+      - Left (Keyword Sidebar, 25% width): List keywords (bg-[#c9c08f], text-[#006039]), searchable/filterable by tag ("Primary" with gold star `#a37e2c`, "Secondary"). Add a "Suggested Keywords" button (modal with mock DataForSEO suggestions).
+      - Right (Google Map, 75% width): Mock Google Map with geo-grid, color-coded rankings (dark green `#006039` top 3, light green `#9eca9e` 4-7, yellow `#a37e2c` 8-10, orange 11-20, red below 20), tooltips (Framer Motion: fade-in) with keyword/rank/geo-point.
+    - Sub-menu: "Manage Campaigns", "View Rankings", "Audits".
+  - Campaign Setup (Onboarding Wizard):
+    - Step 1: "Connect to Google" (mock button) or select GBP via name search/button or Place ID/button (dropdown for linked GBPs).
+    - Step 2: Name Campaign (text input, e.g., "John’s Plumbing Campaign").
+    - Step 3: Set Metrics (dual-button toggle "KM"/"Miles" with animation, styled `#a37e2c`/`#006039`), Geo-Grid Size (buttons: 5x5, 7x7, 9x9, 11x11, 13x13, 15x15), Distance (buttons: 100m, 500m, 1km, 2km, 5km), Shape (square/circular toggle with mini-map preview, Framer Motion).
+    - Step 4: Add Keywords (free text, tag as "Primary"/"Secondary", suggestion modal, max 100).
+    - Step 5: Configure Updates (frequency buttons: daily/weekly/fortnightly/monthly), Email Notifications (recipient buttons: self/end client, template input), "Run Free Audit" button (mock report), "Order Premium Audit" button (50 credits).
+    - Add "Save & Exit" and "Review & Launch" buttons.
+    - Style: Wizard with progress indicators, glassmorphism inputs (rgba(244, 244, 242, 0.8), blur, gold borders), Framer Motion transitions.
+  - Additional Onboarding Features:
+    - Client Dashboard: Add "Client Profile" (name, industry, location), free audit health score (e.g., 65/100) with gaps/actions, progress tracker ("Onboarding 80% Complete").
+    - Credit Balance Card: "150 Credits Remaining" with "Buy Credits" button.
+  - Design:
+    - Map: Zoom controls, full-screen toggle, animated tooltips.
+    - Keyword Sidebar: Searchable/filterable, "Select" button per keyword updates map.
+    - Wizard: Button-based navigation, premium look with Rolex colors.
+  - Interdependencies:
+    - Export to Reports as PDF (js-pdf).
+    - Keywords feed into Optimization.
+    - GBP linking enables Reviews/Posts.
+    - Update Client Dashboard: "New Campaign Started", summary card ("3 Campaigns Running").

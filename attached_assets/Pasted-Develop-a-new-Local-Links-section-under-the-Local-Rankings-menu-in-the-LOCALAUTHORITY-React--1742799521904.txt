@@ -1,0 +1,162 @@
+Develop a new "Local Links" section under the "Local Rankings" menu in the "LOCALAUTHORITY" React + Node.js SaaS application on Replit, with three submenus: "Citation Report," "Competitor Gap Analysis," and "Build Local Citations." Start by implementing the "Citation Report" submenu, which will use DataForSEO to pull backlink data for the website associated with the selected campaign, filter out citation links (links containing Name, Address, and Phone Number, or NAP, such as those from directories like Yellow Pages), and display a detailed report with metrics like NAP consistency, claimed status, and other relevant insights. Ensure the design aligns with the existing GBP Map Rankings and Local Organic Rankings tabs, with all text in black (#000000) for visibility against the white background, and tab bars (for switching between submenus) styled with a black background (#000000) and white text (#FFFFFF) when unselected, and an orange background (#F28C38) with white text (#FFFFFF) when selected.
+
+### Objective
+- **Purpose**: Create a "Citation Report" submenu that allows users to:
+  - View all backlinks for the website associated with the selected campaign, pulled from DataForSEO.
+  - Filter and identify citation links (links containing NAP data, such as from directories like Yellow Pages).
+  - Display a detailed report with metrics like NAP consistency, claimed status, citation authority, and other insights.
+- **Field Testing Goal**: Ensure the submenu provides a comprehensive view of citation links, actionable metrics for improving local SEO, and aligns with the app’s design (black text on white background).
+
+### Backend Requirements
+- **Step 1: Create a New Endpoint for Citation Report Data**:
+  - **Endpoint**: Create a new endpoint under the "Local Links" section to fetch citation report data for the selected campaign (e.g., `/api/client/local-links/citation-report`).
+  - **Purpose**: Pull backlink data for the campaign’s website using DataForSEO, filter citation links, and calculate relevant metrics.
+  - **Response Data**:
+    - **Campaign Details**:
+      - `website`: The website URL associated with the campaign (e.g., "https://doctortoyou.com.au").
+      - `businessName`: The business name from the campaign (e.g., "Doctor To You").
+      - `address`: The business address from the campaign (e.g., "123 Main St, Sydney, NSW 2000, Australia").
+      - `phoneNumber`: The business phone number from the campaign (e.g., "+61 2 1234 5678").
+    - **Backlinks Data**: An array of objects, each representing a backlink, with the following fields:
+      - `sourceUrl`: The URL of the page linking to the website (e.g., "https://www.yellowpages.com.au/business/doctor-to-you").
+      - `anchorText`: The anchor text of the link (e.g., "Doctor To You").
+      - `targetUrl`: The URL on the campaign’s website being linked to (e.g., "https://doctortoyou.com.au").
+      - `isCitation`: Boolean indicating if the backlink is a citation (contains NAP data).
+      - `napData`: Object containing the NAP data found on the source page (if `isCitation` is true):
+        - `name`: The business name found (e.g., "Doctor To You").
+        - `address`: The address found (e.g., "123 Main St, Sydney, NSW 2000, Australia").
+        - `phoneNumber`: The phone number found (e.g., "+61 2 1234 5678").
+      - `isClaimed`: Boolean indicating if the citation is claimed (e.g., if the directory profile is verified by the business, based on DataForSEO data or manual checks).
+      - `domainAuthority`: The domain authority of the source URL (fetched via DataForSEO, e.g., 45 on a scale of 0-100).
+      - `lastChecked`: The date and time the backlink was last checked (e.g., "24/03/2025 13:56").
+      - Example: `[{ sourceUrl: "https://www.yellowpages.com.au/business/doctor-to-you", anchorText: "Doctor To You", targetUrl: "https://doctortoyou.com.au", isCitation: true, napData: { name: "Doctor To You", address: "123 Main St, Sydney, NSW 2000, Australia", phoneNumber: "+61 2 1234 5678" }, isClaimed: true, domainAuthority: 45, lastChecked: "24/03/2025 13:56" }, ...]`.
+    - **Citation Metrics**:
+      - `totalBacklinks`: Total number of backlinks found (e.g., 150).
+      - `totalCitations`: Number of backlinks identified as citations (e.g., 30).
+      - `napConsistency`: Object showing the consistency of NAP data across citations:
+        - `nameConsistency`: Percentage of citations with the correct business name (e.g., 90%).
+        - `addressConsistency`: Percentage of citations with the correct address (e.g., 85%).
+        - `phoneConsistency`: Percentage of citations with the correct phone number (e.g., 95%).
+      - `claimedCitations`: Number of citations that are claimed (e.g., 20).
+      - `unclaimedCitations`: Number of citations that are unclaimed (e.g., 10).
+      - `averageCitationAuthority`: Average domain authority of citation sources (e.g., 40).
+      - `topCitationSources`: Array of the top 5 citation sources by domain authority, with their source URL and domain authority (e.g., `[{ sourceUrl: "https://www.yellowpages.com.au", domainAuthority: 60 }, ...]`).
+  - **Logic**:
+    - Retrieve the user’s selected campaign and validate it.
+    - Fetch the website URL, business name, address, and phone number from the campaign configuration.
+    - Use the DataForSEO Backlinks API to pull all backlinks for the campaign’s website:
+      - Make an API call to DataForSEO’s Backlinks endpoint to get a list of backlinks, including source URL, anchor text, target URL, and domain authority.
+    - Filter citation links:
+      - For each backlink, scrape the source URL to check for the presence of NAP data (business name, address, phone number).
+      - Use a simple heuristic to identify NAP data:
+        - Check if the source page contains the business name (exact or partial match).
+        - Look for address patterns (e.g., street number, city, state, postal code) matching the campaign’s address.
+        - Look for phone number patterns (e.g., "+61", "1234 5678") matching the campaign’s phone number.
+      - If the source page contains at least two of the three NAP elements (e.g., name and address, or address and phone), mark the backlink as a citation (`isCitation: true`) and store the found NAP data.
+    - Determine claimed status:
+      - Use DataForSEO’s Business Data API (if available) to check if the citation source (e.g., Yellow Pages) indicates a claimed profile for the business.
+      - Alternatively, maintain a list of known directories and their claim status indicators (e.g., "Verified" badge on the page) and check for these indicators during scraping.
+    - Calculate citation metrics:
+      - Count the total backlinks and citations.
+      - Calculate NAP consistency by comparing the found NAP data in each citation to the campaign’s official NAP data:
+        - For each citation, check if the name, address, and phone number match exactly (or within a small tolerance for formatting differences).
+        - Compute the percentage of citations with correct NAP elements.
+      - Count claimed and unclaimed citations based on the `isClaimed` field.
+      - Calculate the average domain authority of citation sources.
+      - Identify the top 5 citation sources by domain authority.
+    - Store the backlink data and metrics in a new collection (e.g., `citationReports`) for future reference, with a timestamp for the last check.
+    - Return the campaign details, backlinks data, and citation metrics in the response.
+
+### Frontend Requirements
+- **Step 1: Create the Local Links Section and Citation Report Submenu**:
+  - **Location**: Add a new "Local Links" section under the "Local Rankings" menu, with three submenus: "Citation Report," "Competitor Gap Analysis," and "Build Local Citations." Implement the "Citation Report" submenu first.
+  - **Tab Bar Styling**:
+    - Style the tab bar for switching between "Local Links" submenus ("Citation Report," "Competitor Gap Analysis," "Build Local Citations"):
+      - Unselected tab: Black background (#000000) with white text (#FFFFFF, 16px Montserrat).
+      - Selected tab: Orange background (#F28C38) with white text (#FFFFFF, 16px Montserrat).
+    - Style the parent tab bar for switching between "Local Rankings" sections ("GBP Map Rankings," "Local Organic Rankings," "Local Links"):
+      - Unselected tab: Black background (#000000) with white text (#FFFFFF, 16px Montserrat).
+      - Selected tab: Orange background (#F28C38) with white text (#FFFFFF, 16px Montserrat).
+  - **Layout**:
+    - **Header Section**:
+      - Display the campaign’s website URL (e.g., "doctortoyou.com.au") as a heading (black text, #000000, 20px bold Montserrat).
+      - Show the business name, address, and phone number below the website URL (black text, #000000, 16px Montserrat).
+      - Add a "Last Checked" label (e.g., "Last Checked: 24/03/2025 13:56") (black text, #000000, 14px Montserrat).
+    - **Summary Metrics Section**:
+      - Display a row of cards showing the citation metrics:
+        - Total Backlinks (e.g., "150").
+        - Total Citations (e.g., "30").
+        - Claimed Citations (e.g., "20").
+        - Unclaimed Citations (e.g., "10").
+        - Average Citation Authority (e.g., "40").
+      - Style each card with a white background, a subtle border, and centered text.
+      - Use black text (#000000, 16px Montserrat) for the metric values and labels.
+    - **NAP Consistency Section**:
+      - Display a section showing NAP consistency metrics:
+        - Name Consistency (e.g., "90%").
+        - Address Consistency (e.g., "85%").
+        - Phone Consistency (e.g., "95%").
+      - Use progress bars to visualize each metric:
+        - Scale the bars from 0 to 100%.
+        - Color-code the bars: Green (#28A745) for 80-100%, Yellow (#F5A461) for 50-79%, Red (#E63946) for 0-49%.
+      - Add labels above each progress bar (e.g., "Name Consistency") with black text (#000000, 16px Montserrat).
+      - Display the percentage next to each bar (black text, #000000, 14px Montserrat).
+    - **Top Citation Sources**:
+      - Display a list of the top 5 citation sources by domain authority:
+        - Source URL (e.g., "https://www.yellowpages.com.au").
+        - Domain Authority (e.g., "60").
+      - Style as a small table with a white background and subtle borders.
+      - Ensure all text in the table (headers, cells) is black (#000000, 16px Montserrat for body, 18px bold Montserrat for headers).
+    - **Citation Links Table**:
+      - Display a table listing all citation links, with the following columns:
+        - Source URL: The URL of the citation (e.g., "https://www.yellowpages.com.au/business/doctor-to-you").
+        - Anchor Text: The anchor text of the link (e.g., "Doctor To You").
+        - Target URL: The URL on the campaign’s website (e.g., "https://doctortoyou.com.au").
+        - NAP Data: The found NAP data (e.g., "Name: Doctor To You, Address: 123 Main St, Sydney, NSW 2000, Australia, Phone: +61 2 1234 5678").
+        - Claimed: The claimed status (e.g., "Yes" or "No").
+        - Domain Authority: The domain authority of the source (e.g., "45").
+        - Last Checked: Date and time of the last check (e.g., "24/03/2025 13:56").
+      - Style the table with a white background, subtle borders, and hover effects on rows (light gray background on hover, #F5F5F5).
+      - Ensure all text in the table (headers, cells) is black (#000000, 16px Montserrat for body, 18px bold Montserrat for headers).
+      - Color-code the "Claimed" column: Green (#28A745) for "Yes," Red (#E63946) for "No."
+    - **Filters and Sorting**:
+      - Add a filter bar above the table with the following options:
+        - Claimed Status: Dropdown to filter by "All," "Claimed," or "Unclaimed."
+        - Sort By: Dropdown to sort by "Source URL," "Domain Authority," or "Last Checked."
+        - Sort Order: Toggle between "Ascending" and "Descending."
+      - Style the filter bar with a white background and black text (#000000, 16px Montserrat for labels and options).
+      - Add a "Clear Filters" button (orange background, #F28C38, with white text, #FFFFFF, 16px Montserrat).
+  - **Design**:
+    - Use the app’s existing color scheme:
+      - Primary color: #F28C38 for buttons and highlights.
+      - Positive: #28A745 (Green).
+      - Negative: #E63946 (Red).
+      - Neutral: #CCCCCC (Gray).
+    - Ensure all text (headings, subheadings, labels, tooltips, table content, etc.) is black (#000000):
+      - Headings: 20px bold Montserrat.
+      - Subheadings: 18px bold Montserrat.
+      - Body text: 16px Montserrat.
+      - Small text (e.g., in tooltips, labels): 14px Montserrat.
+    - Add subtle animations using Framer Motion:
+      - Fade-in animation for the entire submenu when it loads.
+      - Scale animation on hover for table rows, filter buttons, and cards.
+
+### Testing
+- **Test Case 1: Data Display**:
+  - Select a campaign with a website and verify that the "Citation Report" submenu displays:
+    - The campaign’s website URL, business name, address, phone number, and last checked date in the header.
+    - Summary metrics cards with total backlinks, total citations, claimed/unclaimed citations, and average citation authority.
+    - NAP consistency section with progress bars for name, address, and phone consistency.
+    - A table listing all citation links with their source URL, anchor text, target URL, NAP data, claimed status, domain authority, and last checked date.
+- **Test Case 2: Visual Elements**:
+  - Ensure all text in the header, summary cards, NAP consistency section, top citation sources, table, and filters is black (#000000).
+  - Verify that the tab bars (both parent and submenu) have a black background with white text when unselected, and an orange background with white text when selected.
+  - Check that the NAP consistency progress bars use the correct colors (green, yellow, red) based on the percentage.
+  - Confirm that the "Claimed" column uses green for "Yes" and red for "No."
+- **Test Case 3: Interactivity**:
+  - Test the claimed status filter and verify that the table updates to show only claimed or unclaimed citations as selected.
+  - Test the sort by and sort order options and confirm that the table updates accordingly.
+  - Test the "Clear Filters" button and ensure it resets all filters.
+- **Test Case 4: Error Handling**:
+  - Test with a campaign that has no backlinks and verify that the submenu displays a message like "No backlinks found for this website" (in black text, #000000, 16px Montserrat).
+  - Test with a failed DataForSEO API call and ensure the submenu displays a message like "Failed to fetch backlink data" (in black text, #000000, 16px Montserrat).

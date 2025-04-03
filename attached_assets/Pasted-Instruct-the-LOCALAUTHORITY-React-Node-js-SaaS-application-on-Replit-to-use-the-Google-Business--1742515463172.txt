@@ -1,0 +1,37 @@
+Instruct the "LOCALAUTHORITY" React + Node.js SaaS application on Replit to use the Google Business Profile API in various GBP Audit pages, leveraging the shared Google API credentials set up in the admin panel.
+
+### Purpose of Google Business Profile API
+- **Role**: Fetches GBP data to populate audit pages with business details, reviews, posts, photos, Q&A, performance metrics, and duplicate listings.
+- **Use Cases**:
+  - **Business Info Page**: Display name, address, categories, SAB settings.
+  - **Reviews Page**: Fetch reviews for sentiment analysis and spam detection.
+  - **Posts Page**: Analyze post frequency and engagement.
+  - **Photos Page**: Audit photo quantity and variety.
+  - **Q&A Page**: Check for unanswered questions.
+  - **Performance Page**: Show calls, clicks, and trends.
+  - **Duplicate Listings Page**: Identify potential duplicate GBP listings.
+  - **GBP Map Rankings Page**: Use GBP location as the starting point for geo-grid ranking analysis.
+- **Field Testing Goal**: Ensure all GBP data is fetched accurately to populate audit pages, supporting comprehensive local SEO analysis.
+
+### Backend (Node.js)
+- Update `/api/client/gbp-audit` endpoints to use the Google Business Profile API:
+  - **General Logic**:
+    - Retrieve the shared `clientId`, `clientSecret`, and `redirectUri` from the stored credentials (e.g., `.env` or `apiCredentials` collection).
+    - Use the `googleapis` Node.js library to initialize the client with the scope `https://www.googleapis.com/auth/business.manage`.
+    - Use the stored access token (from OAuth flow) to make authorized API calls.
+  - **Endpoints**:
+    - `/api/client/gbp-audit/business`: Fetch business info (name, address, categories, SAB settings).
+    - `/api/client/gbp-audit/reviews`: Fetch reviews for sentiment analysis and spam detection.
+    - `/api/client/gbp-audit/posts`: Fetch posts to analyze frequency and engagement.
+    - `/api/client/gbp-audit/photos`: Fetch photos to audit quantity and variety.
+    - `/api/client/gbp-audit/qna`: Fetch Q&A data to check for unanswered questions.
+    - `/api/client/gbp-audit/performance`: Fetch performance metrics (calls, clicks, trends).
+    - `/api/client/gbp-audit/duplicates`: Fetch location data to identify potential duplicates.
+    - `/api/client/gbp-audit/map-rankings`: Fetch GBP location (lat/lng) as the starting point for geo-grid analysis.
+  - **Error Handling**:
+    - If credentials or access token are missing, return a 401 error: `{ error: "Google Business Profile API not configured or user not authenticated" }`.
+
+### Testing
+- Test each GBP Audit page to ensure data is fetched correctly using the Google Business Profile API.
+- Verify that the API calls are authorized using the stored OAuth access token.
+- Ensure error handling works if credentials or authentication fail.

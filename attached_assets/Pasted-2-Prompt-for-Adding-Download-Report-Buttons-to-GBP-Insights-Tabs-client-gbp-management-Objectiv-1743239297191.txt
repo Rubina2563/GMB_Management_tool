@@ -1,0 +1,109 @@
+2. Prompt for Adding Download Report Buttons to GBP Insights Tabs (/client/gbp-management/)
+Objective
+Add Download Report buttons to each GBP Insights tab under /client/gbp-management/ (Overview, Keywords, Reviews, Posting, Citations, Performance, Competitors, Description Insights) to allow users to generate and download the corresponding PDF report directly from the tab. This provides an additional access point to the reports, complementing the /client/reports section.
+
+Backend Requirements
+Use the same endpoint as the Reports Section: /api/client/gbp/reports/generate.
+The reportType in the request body will correspond to the specific tab (e.g., reportType: "overall" for the Overview tab).
+Frontend Design for GBP Insights Tabs
+For each tab (Overview, Keywords, Reviews, Posting, Citations, Performance, Competitors, Description Insights), add the following:
+
+Button Placement:
+Add a "Download Report" button in the top-right corner of each tab, below the tab score (e.g., "Score: 70/100").
+Button Style: bg-orange-base hover:bg-orange-light text-white (#F97316, hover #FB923C, #FFFFFF text).
+Interactivity:
+Clicking the button triggers the /api/client/gbp/reports/generate endpoint with the appropriate reportType (e.g., reportType: "overall" for the Overview tab, reportType: "keywords" for the Keywords tab, etc.).
+The generated PDF follows the template designed earlier and includes data specific to that tab.
+Mapping of Tabs to Report Types
+Overview Tab: Generates the "Overall GBP Performance Summary" report (reportType: "overall").
+Keywords Tab: Generates the "Keyword Optimization Report" (reportType: "keywords").
+Reviews Tab: Generates the "Review Management Report" (reportType: "reviews").
+Posting Tab: Generates the "Posting Strategy Report" (reportType: "posting").
+Citations Tab: Generates the "Citation Opportunities Report" (reportType: "citations").
+Performance Tab: Generates the "Performance Overview Report" (reportType: "performance").
+Competitors Tab: Generates the "Competitor Analysis Report" (reportType: "competitors").
+Description Insights Tab: Generates the "Description Insights Report" (reportType: "description").
+Example Layout for Overview Tab (Updated with Download Report Button)
+text
+
+Collapse
+
+Wrap
+
+Copy
+--------------------------------------------------
+| [Authority Local Logo]                Score: 70/100 |
+|                                       [Download Report] |
+|                                                |
+|                   Overview                     |
+|                                                |
+| **Category Scores**                            |
+| [Card: bg-white border border-gray-200]        |
+| Keyword Optimization: 72/100 [Progress Bar]    |
+| Review Response: 65/100 [Progress Bar]         |
+| ...                                            |
+|                                                |
+| **Key Recommendations**                        |
+| [Card: bg-white border border-gray-200]        |
+| - Respond to negative reviews within 24 hours  |
+| - Add keywords to your description             |
+|                                                |
+|  --------------------------------------------  |
+|  Powered by Authority Local | www.authoritylocal.com  |
+--------------------------------------------------
+Example Layout for Keywords Tab (Updated with Download Report Button)
+text
+
+Collapse
+
+Wrap
+
+Copy
+--------------------------------------------------
+| [Authority Local Logo]                Score: 72/100 |
+|                                       [Download Report] |
+|                                                |
+|                   Keywords                     |
+|                                                |
+| **Suggested Keywords**                         |
+| [Card: bg-white border border-gray-200]        |
+| emergency plumbing repair, Volume: 3400...     |
+| ...                                            |
+|                                                |
+| **Recommendations**                            |
+| [Card: bg-white border border-gray-200]        |
+| - Add 'emergency plumbing repair' to your...   |
+| - Create posts targeting 'water heater...'     |
+|                                                |
+|  --------------------------------------------  |
+|  Powered by Authority Local | www.authoritylocal.com  |
+--------------------------------------------------
+(Similar updates will be applied to the other tabs: Reviews, Posting, Citations, Performance, Competitors, and Description Insights.)
+
+PDF Report Content (High-Level Structure)
+Each report generated from either the /client/reports section or the individual GBP Insights tabs will follow the PDF template designed earlier (cover page, table of contents, report sections, action plan). The content will focus on:
+
+Summary Data: High-level metrics (e.g., scores, key numbers) without detailed charts.
+Commentary: Actionable insights for each section, generated using NLP (e.g., spaCy/OpenAI) to provide context and recommendations.
+Action Plan: A consolidated list of recommendations at the end.
+For example, the Review Management Report PDF might include:
+
+Cover Page: Authority Local logo, client info (e.g., "Fitness Pro Studio"), timestamp (e.g., "March 28, 2025").
+Table of Contents: Links to sections like "Review Analysis", "Recommendations", "Action Plan".
+Review Analysis Section:
+Summary: "Your review response rate is 65%, with 3 priority reviews needing attention."
+Commentary: "Customers frequently mention 'high cost' in negative reviews. Addressing pricing transparency in your description can improve satisfaction."
+Recommendations Section:
+"Respond to the 3 priority reviews within 24 hours."
+"Add pricing transparency to your description."
+Action Plan: A numbered list of all recommendations.
+Testing
+Reports Section (/client/reports):
+Verify that each placeholder card displays the correct title, description, and "Download Report" button.
+Test the PDF generation for each report type, ensuring the template (cover page, table of contents, etc.) is followed.
+Individual GBP Insights Tabs (/client/gbp-management/):
+Confirm that the "Download Report" button appears in each tab and generates the correct report type.
+Test the styling of the button (bg-orange-base hover:bg-orange-light text-white).
+PDF Content:
+Ensure the PDF includes the Authority Local logo, timestamps, and client information.
+Verify that the commentary is actionable and relevant to the report type.

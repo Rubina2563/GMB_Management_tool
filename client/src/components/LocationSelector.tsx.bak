@@ -1,0 +1,348 @@
+import React, { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { motion } from 'framer-motion';
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from '@/components/ui/select';
+import { 
+  MapPin, 
+  Globe, 
+  Phone, 
+  Link as LinkIcon, 
+  Star, 
+  TrendingUp, 
+  TrendingDown,
+  ExternalLink,
+  Calendar,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Search
+} from 'lucide-react';
+
+export interface Location {
+  id: number;
+  name: string;
+  address: string;
+  phone: string | null;
+  website: string | null;
+  location_id: string;
+  latitude: string | null;
+  longitude: string | null;
+  status: string;
+  // Additional properties we'll simulate for the UI
+  ranking?: number;
+  rankingTrend?: number; // positive for improvement, negative for decline
+  totalReviews?: number;
+  averageRating?: number;
+  lastPostDate?: string;
+}
+
+interface LocationSelectorProps {
+  locations: Location[];
+  selectedLocationId: number | null;
+  onLocationChange: (locationId: string) => void;
+  className?: string;
+}
+
+export default function LocationSelector({
+  locations,
+  selectedLocationId,
+  onLocationChange,
+  className = ''
+}: LocationSelectorProps) {
+  const [sortOption, setSortOption] = useState<string>("name");
+  const [currentPage, setCurrentPage] = useState<number>(0);
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const locationsPerPage = 5;
+
+  if (!locations || locations.length === 0) {
+    return null;
+  }
+
+  // Filter locations by search query if any
+  const filteredLocations = searchQuery ? 
+    locations.filter(location => 
+      location.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      location.address.toLowerCase().includes(searchQuery.toLowerCase())
+    ) : locations;
+
+  // Sort locations based on selected option
+  const sortedLocations = [...filteredLocations].sort((a, b) => {
+    if (sortOption === "name") {
+      return a.name.localeCompare(b.name);
+    } else if (sortOption === "ranking") {
+      const rankA = a.ranking || 100;
+      const rankB = b.ranking || 100;
+      return rankA - rankB;
+    }
+    return 0;
+  });
+  
+  // Calculate total pages
+  const totalPages = Math.ceil(sortedLocations.length / locationsPerPage);
+  
+  // Handle page change
+  const nextPage = () => {
+    if (currentPage < totalPages - 1) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+  
+  const prevPage = () => {
+    if (currentPage > 0) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  // Animation variants
+  const containerVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { 
+      opacity: 1, 
+      y: 0,
+      transition: {
+        duration: 0.3
+      }
+    }
+  };
+
+  const cardVariants = {
+    hidden: { opacity: 0, y: 10 },
+    visible: { 
+      opacity: 1, 
+      y: 0,
+      transition: {
+        duration: 0.3
+      }
+    },
+    hover: {
+      scale: 1.02,
+      transition: {
+        duration: 0.2
+      }
+    }
+  };
+
+  // Format ranking trend display
+  const getRankingTrendDisplay = (trend: number | undefined) => {
+    if (!trend || trend === 0) return null;
+    
+    if (trend > 0) {
+      return (
+        <span className="flex items-center text-green-600 text-sm font-medium">
+          <TrendingUp className="h-4 w-4 mr-1" />
+          +{trend}
+        </span>
+      );
+    } else {
+      return (
+        <span className="flex items-center text-red-600 text-sm font-medium">
+          <TrendingDown className="h-4 w-4 mr-1" />
+          {trend}
+        </span>
+      );
+    }
+  };
+
+  // Get Maps URL for a location
+  const getMapsUrl = (location: Location) => {
+    if (location.latitude && location.longitude) {
+      return `https://www.google.com/maps/place/${location.latitude},${location.longitude}`;
+    }
+    return `https://www.google.com/maps/search/${encodeURIComponent(location.name + ' ' + location.address)}`;
+  };
+
+  // Create additional dummy locations if needed
+  // Always create a copy of the sorted locations
+  let displayLocations = [...sortedLocations];
+  
+  // Important: Create dummy data before getting current page locations
+  // So the pagination works with the augmented data
+  
+  // Add dummy locations if we have less than 5 for display purposes
+  if (displayLocations.length < 5) {
+    const dummyNames = ["Downtown Cafe", "Westside Shop", "Northend Store", "Eastside Market", "South Plaza"];
+    const dummyAddresses = [
+      "123 Main St, Portland, OR", 
+      "456 Market St, Seattle, WA", 
+      "789 Broadway, San Francisco, CA",
+      "321 Oak Ave, Los Angeles, CA",
+      "654 Pine St, San Diego, CA"
+    ];
+    
+    const existingIds = displayLocations.map(loc => loc.id);
+    let nextId = Math.max(...existingIds, 0) + 1;
+    
+    for (let i = displayLocations.length; i < 5; i++) {
+      displayLocations.push({
+        id: nextId++,
+        name: dummyNames[i % dummyNames.length],
+        address: dummyAddresses[i % dummyAddresses.length],
+        phone: '(555) 123-4567',
+        website: 'example.com',
+        location_id: `dummy-${i}`,
+        latitude: '45.5152',
+        longitude: '-122.6784',
+        status: 'active',
+        ranking: Math.floor(Math.random() * 20) + 1,
+        rankingTrend: Math.floor(Math.random() * 6) - 2,
+        totalReviews: Math.floor(Math.random() * 100),
+        averageRating: Number((Math.random() * 2 + 3).toFixed(1)),
+        lastPostDate: new Date().toISOString()
+      });
+    }
+  }
+
+  return (
+    <motion.div
+      className={`${className} w-full`}
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+    >
+      <Card className="bg-white shadow-sm border border-gray-200 mb-6">
+        <CardHeader className="pb-2">
+          <div className="flex justify-between items-center">
+            <CardTitle className="text-lg font-semibold flex items-center font-['Montserrat'] text-black">
+              <Globe className="h-5 w-5 mr-2 text-[#F28C38]" />
+              Business Locations
+            </CardTitle>
+            
+            <div className="flex items-center space-x-3">
+              {/* Search input */}
+              <div className="relative w-52">
+                <Input
+                  type="text"
+                  placeholder="Search locations..."
+                  className="pr-8 h-8"
+                  value={searchQuery}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                    setSearchQuery(e.target.value);
+                    setCurrentPage(0); // Reset to first page when searching
+                  }}
+                />
+                <Search className="h-4 w-4 absolute right-2 top-2 text-gray-400" />
+              </div>
+              
+              {/* Sort dropdown */}
+              <div className="flex items-center">
+                <span className="text-sm text-gray-500 mr-2">Sort by:</span>
+                <Select value={sortOption} onValueChange={setSortOption}>
+                  <SelectTrigger className="bg-white text-[#1C2526] h-8 w-32">
+                    <SelectValue placeholder="Sort by" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="name">Name</SelectItem>
+                    <SelectItem value="ranking">Ranking</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-5 gap-4">
+              // Get current page locations for display
+  const indexOfLastLocation = (currentPage + 1) * locationsPerPage;
+  const indexOfFirstLocation = indexOfLastLocation - locationsPerPage;
+  const currentPageLocations = displayLocations.slice(indexOfFirstLocation, indexOfLastLocation);
+
+{currentPageLocations.map((location: Location) => {
+              const isSelected = location.id === selectedLocationId;
+              
+              // For all locations, whether selected or not, show a consistent horizontal card
+              return (
+                <motion.div 
+                  key={location.id}
+                  variants={cardVariants}
+                  initial="hidden"
+                  animate="visible"
+                  whileHover="hover"
+                >
+                  <Card className={`${isSelected ? 'border-2 border-[#F28C38]' : 'border border-gray-200'} bg-white shadow-sm h-full relative`}>
+                    {isSelected && (
+                      <div className="absolute top-0 right-0">
+                        <Badge className="rounded-bl-md rounded-tr-md rounded-tl-none rounded-br-none bg-[#F28C38] text-white">Selected</Badge>
+                      </div>
+                    )}
+                    <CardContent className="p-3">
+                      <h3 className="text-sm font-semibold text-[#1C2526] font-['Montserrat'] truncate mb-1">{location.name}</h3>
+                      
+                      <div className="flex items-start mb-2">
+                        <MapPin className="h-3 w-3 text-[#F28C38] mt-0.5 mr-1 flex-shrink-0" />
+                        <p className="text-xs text-[#1C2526] truncate">{location.address}</p>
+                      </div>
+                      
+                      <div className="flex justify-between items-center mt-2">
+                        <Button
+                          className={isSelected ? "bg-[#F28C38] hover:bg-[#F5A461] text-white" : "bg-gray-100 hover:bg-gray-200 text-gray-700"}
+                          size="sm"
+                          onClick={() => onLocationChange(location.id.toString())}
+                        >
+                          {isSelected ? "Selected" : "Select"}
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              );
+            })}
+          </div>
+          
+          {/* Pagination controls */}
+          {totalPages > 1 && (
+            <div className="flex justify-center items-center mt-6 space-x-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={prevPage}
+                disabled={currentPage === 0}
+                className="border-gray-300 text-gray-700"
+              >
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                Previous
+              </Button>
+              
+              <div className="text-sm text-gray-600">
+                Page {currentPage + 1} of {totalPages}
+              </div>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={nextPage}
+                disabled={currentPage >= totalPages - 1}
+                className="border-gray-300 text-gray-700"
+              >
+                Next
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
+          )}
+          
+          {/* See more button if we have more than 5 locations */}
+          {sortedLocations.length > 5 && currentPage === 0 && (
+            <div className="text-center mt-4">
+              <Button
+                variant="link"
+                onClick={nextPage}
+                className="text-[#F28C38]"
+              >
+                See more locations
+                <ChevronDown className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+}

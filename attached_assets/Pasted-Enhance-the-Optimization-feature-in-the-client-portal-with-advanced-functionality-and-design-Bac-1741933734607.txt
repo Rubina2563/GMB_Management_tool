@@ -1,0 +1,26 @@
+Enhance the Optimization feature in the client portal with advanced functionality and design:
+- Backend:
+  - Update the endpoint "/api/gbp/optimize" to:
+    - Use admin-managed OpenAI to analyze GBP data, scrape competitor profiles (via SerpAPI), and internet trends based on primary keywords/categories.
+    - Generate prioritized suggestions (high/medium impact) with mock actions (e.g., "Add 'emergency plumber' to keywords").
+    - Apply approved changes to GBP via Google API (admin-managed).
+  - Add endpoints:
+    - "/api/gbp/category-optimize": Suggest categories based on top-ranking businesses (mock SerpAPI data), with ranking potential scores (e.g., 85/100).
+    - "/api/gbp/keyword-optimize": Provide keywords with difficulty (1-10) and volume (mock DataForSEO data).
+  - Store optimization history and sync to Reports and Rankings.
+- Frontend:
+  - Enhance /client/optimization within the SaaS layout:
+    - Left-Hand Sidebar: Group under "GBP Insights" with sub-menus: "Dashboard", "Optimization" (AI Suggestions, Category Optimization, Keyword Optimization), "Rankings", "Reviews". Add a search bar (bg-[#c9c08f], text-[#006039]).
+    - Right-Hand Pane:
+      - Sub-menu: "AI Suggestions", "Category Optimization", "Keyword Optimization".
+      - AI Suggestions: Display cards with suggestions (bg-[#c9c08f], text-[#006039]), "Apply" button (gold #a37e2c), progress bars (Framer Motion: animate width), color-coded impact (green #9eca9e, gold #a37e2c).
+      - Category Optimization: Table comparing current vs. suggested categories with scores, approval toggle.
+      - Keyword Optimization: List with difficulty, volume, "Save" button, priority slider (1-5).
+    - Client Dashboard Widget: Add optimization progress (e.g., "75% optimized") with a mini-chart (Chart.js).
+  - Design:
+    - Animate cards (Framer Motion: rotate-in, scale hover) with glow on applied suggestions (#9eca9e shadow).
+    - Gradient background (#f4f4f2 to #c9c08f).
+    - Montserrat font (24px bold, 16px body).
+  - Interdependencies:
+    - Sync data to Rankings and Reports.
+    - Update Client Dashboard "Recent Activity" (e.g., "Optimization applied").

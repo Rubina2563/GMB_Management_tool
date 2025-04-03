@@ -1,0 +1,37 @@
+Set up the Google Business Profile APIs in the admin panel of the "LOCALAUTHORITY" React + Node.js SaaS application on Replit, ensuring all API calls are managed from the backend. This setup will allow admin users to configure the API credentials securely.
+
+### Purpose of Google Business Profile APIs
+- **Role**: The Google Business Profile APIs provide access to GBP data, including business info (name, address, categories), reviews, posts, photos, Q&A, performance metrics (calls, clicks), and duplicate listings.
+- **Use Cases**:
+  - **Business Info Page**: Fetch and display GBP details like name, address, categories, and SAB settings.
+  - **Reviews Page**: Retrieve reviews for sentiment analysis and spam detection.
+  - **Posts Page**: Access GBP posts to analyze frequency and engagement.
+  - **Photos Page**: Fetch photos to audit quantity and variety.
+  - **Q&A Page**: Retrieve Q&A data to check for unanswered questions.
+  - **Performance Page**: Pull metrics like calls, clicks, and trends.
+  - **Duplicate Listings Page**: Identify potential duplicate GBP listings.
+  - **GBP Map Rankings Page**: Use GBP location data as the starting point for geo-grid ranking analysis.
+- **Field Testing Goal**: Ensure all GBP data is fetched accurately to populate audit pages without missing or incorrect data, supporting comprehensive local SEO analysis.
+
+### Backend (Node.js)
+- Create a new admin endpoint `/api/admin/google-business-profile/setup`:
+  - **Method**: POST
+  - **Purpose**: Allow admin users to input and save Google Business Profile API credentials.
+  - **Request Body**:
+    - `clientId`: String (OAuth 2.0 Client ID).
+    - `clientSecret`: String (OAuth 2.0 Client Secret).
+    - `redirectUri`: String (e.g., `http://localhost:3000/oauth2callback`).
+  - **Logic**:
+    - Store the credentials securely in a `.env` file or database (e.g., MongoDB collection `apiCredentials`).
+    - Validate the credentials by making a test API call to the Google Business Profile API (e.g., fetch a list of accounts using `https://mybusinessaccountmanagement.googleapis.com/v1/accounts`).
+    - Return: JSON with `{ success: true, message: "Google Business Profile API setup successful" }` or `{ success: false, error: "Invalid credentials" }`.
+- Update `/api/client/gbp-audit` endpoints:
+  - Ensure all GBP-related endpoints (e.g., `/api/client/gbp-audit/business`, `/api/client/gbp-audit/reviews`) use the stored credentials to make authorized API calls.
+  - Use the `googleapis` Node.js library to interact with the API:
+    - Initialize the client with the stored `clientId`, `clientSecret`, and `redirectUri`.
+    - Use the `https://www.googleapis.com/auth/business.manage` scope for full access.
+- **Error Handling**:
+  - If credentials are missing or invalid, return a 401 error: `{ error: "Google Business Profile API not configured" }`.
+
+### Admin Panel (React)
+- Add a new section in the admin panel under `/admin/api

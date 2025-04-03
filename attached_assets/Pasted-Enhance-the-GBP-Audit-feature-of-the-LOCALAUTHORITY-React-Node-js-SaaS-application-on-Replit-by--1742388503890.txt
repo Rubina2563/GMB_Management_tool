@@ -1,0 +1,92 @@
+Enhance the GBP Audit feature of the "LOCALAUTHORITY" React + Node.js SaaS application on Replit by adding sentiment analysis with multi-colored coding, photo audit, Q&A audit, SAB check, duplicate listings check, keyword insights, and spam/fake reviews detection, inspired by BrightLocal, while maintaining the multi-page approach:
+
+- Backend (Node.js):
+  - Update `/api/client/gbp-audit`:
+    - Add `/api/client/gbp-audit/reviews/sentiment`:
+      - Use NLP (e.g., Google Natural Language API or `natural` library) to classify reviews as Positive, Neutral, or Negative.
+      - Extract key phrases contributing to sentiment.
+      - Return: JSON with sentiment distribution (e.g., 70% Positive, 20% Neutral, 10% Negative) and key phrases.
+    - Add `/api/client/gbp-audit/photos`:
+      - Fetch GBP photos via Google Business Profile API.
+      - Analyze quantity, variety (e.g., interior, exterior, product), and user-uploaded photos.
+      - Return: JSON with photo count, types, and recommendations.
+    - Add `/api/client/gbp-audit/qna`:
+      - Fetch Q&A data via Google Business Profile API.
+      - Check for unanswered questions, engagement, and keyword usage.
+      - Return: JSON with unanswered count, engagement metrics, and keyword presence.
+    - Update `/api/client/gbp-audit/business`:
+      - Add SAB check: Verify if the business is marked as SAB and if service areas are defined.
+      - Return: JSON with SAB status and issues.
+    - Add `/api/client/gbp-audit/duplicates`:
+      - Use DataForSEO or Google Business Profile API to check for duplicate listings.
+      - Return: JSON with duplicate count and details.
+    - Add `/api/client/gbp-audit/keywords`:
+      - Analyze GBP description, posts, and reviews for target keywords (from campaign settings).
+      - Return: JSON with keyword usage and gaps.
+    - Update `/api/client/gbp-audit/reviews`:
+      - Add spam detection: Flag reviews with repetitive text or unnatural spikes (e.g., 10 reviews in 1 day).
+      - Return: JSON with flagged reviews and patterns.
+    - Credit System: 3 credits per full audit (deduct from mock balance).
+
+- Frontend (React):
+  - Update `/client/gbp-audit`:
+    - **Navigation**:
+      - Update sidebar to include new pages:
+        - Summary
+        - Business Info
+        - Reviews
+        - Posts
+        - Performance
+        - Website
+        - Photos (new)
+        - Q&A (new)
+        - Competitor Analysis
+        - Keyword Insights (new)
+        - Duplicate Listings (new)
+        - Recommendations
+      - Use #1C2526 text, #F28C38 for active items.
+    - **Reviews Page**:
+      - Add Sentiment Analysis section:
+        - Pie chart (Chart.js) showing sentiment distribution: Positive (#28A745), Neutral (#F5A461), Negative (#E63946).
+        - List key phrases for each sentiment category (e.g., "great service" for Positive).
+      - Add Spam Detection section:
+        - List flagged reviews with reasons (e.g., "Repetitive text: 'Amazing!'").
+        - Use red (#E63946) for flagged items.
+    - **Photos Page**:
+      - Display photo count, types, and user-uploaded photos.
+      - Use traffic lights: Green (#28A745) for >5 photos, Yellow (#F5A461) for 1-5, Red (#E63946) for 0.
+      - Show recommendations (e.g., "Add exterior photos").
+    - **Q&A Page**:
+      - Display unanswered questions, engagement, and keyword usage.
+      - Use traffic lights: Green (#28A745) for 0 unanswered, Yellow (#F5A461) for 1-3, Red (#E63946) for >3.
+    - **Business Info Page**:
+      - Add SAB Check section:
+        - Show SAB status and service area issues (e.g., "Service areas not defined").
+        - Use traffic lights for issues.
+    - **Duplicate Listings Page**:
+      - List potential duplicates with details.
+      - Use red (#E63946) for duplicates, green (#28A745) if none.
+    - **Keyword Insights Page**:
+      - Show keyword usage in description, posts, and reviews.
+      - Highlight gaps (e.g., "Missing: 'yoga classes'").
+      - Use #F28C38 for keywords.
+    - **Summary Page**:
+      - Update Optimization Score to include new sections (Photos, Q&A, Keywords, Duplicates).
+      - Adjust weights: Business Info (15%), Reviews (15%), Posts (15%), Performance (15%), Website (10%), Photos (10%), Q&A (10%), Keywords (5%), Duplicates (5%).
+  - **Design**:
+    - Background: #FFFFFF for all pages.
+    - Text: #1C2526 (primary).
+    - Buttons: #F28C38 with #FFFFFF text, hover #F5A461.
+    - Framer Motion: Fade-in for pages, scale on hover for buttons.
+    - Montserrat font: 24px bold headings, 16px body.
+
+- Interdependencies:
+  - Pull data from Campaigns, Reviews, Posts, GBP Audit, Citations, Website Audit, Photos, Q&A, Keywords, and Duplicates.
+  - Ensure GBP selection (from `/local-dashboard`) filters all audit data.
+
+- Testing:
+  - Verify Sentiment Analysis accuracy and pie chart display.
+  - Test Photo, Q&A, Keyword, and Duplicate Listings pages.
+  - Confirm updated Optimization Score calculation.
+  - Ensure multi-page navigation works with selected GBP.
+  - Check UI consistency with "LOCALAUTHORITY" design.

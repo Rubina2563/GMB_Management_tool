@@ -1,0 +1,68 @@
+Add a dedicated section in the client panel’s admin screen of the "LOCALAUTHORITY" React + Node.js SaaS application on Replit, allowing users to add their own API keys for language models (OpenAI, Claude, Grok, DeepSeek) to enable AI post creation and review replies. Integrate these features into the GBP Audit dashboard.
+
+### Purpose of Language Model API Integration
+- **Role**: Allow users to use their own API keys for language models (OpenAI, Claude, Grok, DeepSeek) to generate AI-powered content.
+- **Use Cases**:
+  - **Posts Page**: Generate AI-written GBP posts based on user prompts (e.g., "Write a post about a new service launch").
+  - **Reviews Page**: Generate AI-written replies to GBP reviews (e.g., "Thank you for your feedback! We’re glad you enjoyed our service").
+- **Field Testing Goal**: Ensure users can add their API keys, select a language model, and generate high-quality posts and review replies without errors, enhancing GBP engagement.
+
+### Backend (Node.js)
+- Create a new endpoint `/api/client/language-model/setup`:
+  - **Method**: POST
+  - **Purpose**: Allow users to save their language model API keys and preferences.
+  - **Request Body**:
+    - `modelProvider`: String (e.g., "openai", "claude", "grok", "deepseek").
+    - `apiKey`: String (API key for the selected provider).
+  - **Logic**:
+    - Store the API key and provider in the user’s profile (e.g., MongoDB collection `users`, field `languageModelSettings`).
+    - Validate the API key by making a test API call (e.g., for OpenAI, send a small prompt to `https://api.openai.com/v1/completions`).
+    - Return: JSON with `{ success: true, message: "Language model setup successful" }` or `{ success: false, error: "Invalid API key" }`.
+- Add a new endpoint `/api/client/language-model/generate`:
+  - **Method**: POST
+  - **Purpose**: Generate AI content (posts or review replies) using the user’s selected language model.
+  - **Request Body**:
+    - `type`: String ("post" or "review-reply").
+    - `prompt`: String (e.g., "Write a post about a new service launch").
+  - **Logic**:
+    - Retrieve the user’s `modelProvider` and `apiKey` from their profile.
+    - Based on `modelProvider`, make an API call to the appropriate service:
+      - OpenAI: `https://api.openai.com/v1/completions` (or `/v1/chat/completions` for ChatGPT).
+      - Claude: `https://api.anthropic.com/v1/complete` (requires Anthropic API setup).
+      - Grok: Use xAI’s API endpoint (e.g., `https://api.xai.com/v1/generate`).
+      - DeepSeek: Use DeepSeek’s API endpoint (e.g., `https://api.deepseek.com/v1/completions`).
+    - Return: JSON with `{ success: true, content: "Generated text" }` or `{ success: false, error: "Failed to generate content" }`.
+
+### Client Panel (React - Admin Screen)
+- Add a new section in the client panel under `/client/admin/language-model-settings`:
+  - **Section Title**: "Language Model API Setup"
+  - **Form Fields**:
+    - Model Provider (dropdown: "OpenAI", "Claude", "Grok", "DeepSeek").
+    - API Key (text input).
+  - **Submit Button**: "Save Settings" (#F28C38 with #FFFFFF text, hover #F5A461).
+  - **Logic**:
+    - On form submission, send a POST request to `/api/client/language-model/setup`.
+    - Display a success message ("Settings saved successfully") or error message ("Failed to save settings") based on the response.
+  - **Design**:
+    - Background: #FFFFFF.
+    - Text: #1C2526.
+    - Montserrat font: 24px bold headings, 16px body.
+    - Framer Motion: Fade-in for the form, scale on hover for the button.
+
+### Client Panel (React - GBP Audit Integration)
+- Update `/client/gbp-audit/posts`:
+  - Add a "Generate AI Post" button.
+  - On click, open a modal with a text input for the prompt (e.g., "Write a post about a new service launch").
+  - Send a POST request to `/api/client/language-model/generate` with `type: "post"`.
+  - Display the generated content in the modal, with an option to "Post to GBP" (using the Google Business Profile API).
+- Update `/client/gbp-audit/reviews`:
+  - Add a "Generate AI Reply" button next to each review.
+  - On click, open a modal with a pre-filled prompt (e.g., "Write a professional reply to this review: [review text]").
+  - Send a POST request to `/api/client/language-model/generate` with `type: "review-reply"`.
+  - Display the generated reply in the modal, with an option to "Post Reply" (using the Google Business Profile API).
+
+### Testing
+- Verify that users can save their language model API keys and select a provider in the admin screen.
+- Test AI post generation and review replies for each provider (OpenAI, Claude, Grok, DeepSeek).
+- Ensure generated content is high-quality and can be posted to GBP.
+- Test error handling for invalid API keys or failed API calls.
